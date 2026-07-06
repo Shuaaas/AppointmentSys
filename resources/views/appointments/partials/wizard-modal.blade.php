@@ -158,18 +158,8 @@ function openWizard() {
     document.getElementById('overlay-wizard').classList.add('show');
 }
 
-// Hook for the Edit button — in a real app this would fetch the record via AJAX
-// and populate the fields, then point the form at the update route.
-function openEditWizard(id) {
-    document.getElementById('wizard-form').action = "/appointments/" + id;
-    document.getElementById('wizard-method').value = 'PUT';
-    document.getElementById('wizard-modal-title').textContent = 'Edit appointment';
-    wzCurrent = 0;
-    wzUpdateUI();
-    document.getElementById('overlay-wizard').classList.add('show');
-    // TODO: fetch(`/appointments/${id}/edit-data`).then(...).then(populateForm)
-}
-
+// The edit load logic is defined in the page script so it can fetch the full appointment payload
+// and populate the wizard fields before showing the modal.
 function wg(id) {
     const el = document.getElementById(id);
     if (!el) return '—';

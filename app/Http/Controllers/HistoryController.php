@@ -9,18 +9,18 @@ use Illuminate\View\View;
 class HistoryController extends Controller
 {
     /**
-     * History view — shows ALL concluded appointments by default,
-     * with an optional date range filter (date_concluded between from/to).
+     * History view — shows all appointments by default with an optional
+     * encoded date range filter and search support.
      */
     public function index(Request $request): View
     {
         $from = $request->query('from');
         $to   = $request->query('to');
 
-        $history = Appointment::concluded()
-            ->concludedBetween($from, $to)
+        $history = Appointment::withTrashed()
+            ->historyBetween($from, $to)
             ->search($request->query('q'))
-            ->orderByDesc('date_concluded')
+            ->orderByDesc('encoded_at')
             ->get();
 
         return view('history.index', [

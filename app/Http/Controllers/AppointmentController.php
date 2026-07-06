@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
+use App\Services\AppointmentFormService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AppointmentController extends Controller
@@ -23,9 +25,24 @@ class AppointmentController extends Controller
             ->pluck('d');
 
         $selectedDate = $request->query('date', $availableDates->first());
+        $selectedStatus = $request->query('status');
+        $selectedNature = $request->query('nature');
 
-        $appointments = Appointment::active()
-            ->when($selectedDate, fn ($q) => $q->encodedOn($selectedDate))
+        // Show non-archived active workflow records by default
+        $visibleStates = ['new', 'active', 'in_progress', 'completed'];
+
+        $appointments = Appointment::whereIn('record_state', $visibleStates)
+            ->when($selectedStatus, function ($q, $selectedStatus) {
+                if ($selectedStatus === 'active') {
+                    $q->whereIn('record_state', ['new', 'active']);
+                } elseif ($selectedStatus === 'in_progress') {
+                    $q->where('record_state', 'in_progress');
+                } elseif ($selectedStatus === 'completed') {
+                    $q->where('record_state', 'completed');
+                }
+            })
+            ->when($selectedNature, fn ($q) => $q->where('nature_of_appointment', $selectedNature))
+            ->when($selectedDate, fn ($q) => $q->whereDate('encoded_at', $selectedDate))
             ->search($request->query('q'))
             ->orderByDesc('encoded_at')
             ->get();
@@ -34,6 +51,8 @@ class AppointmentController extends Controller
             'appointments'   => $appointments,
             'availableDates' => $availableDates,
             'selectedDate'   => $selectedDate,
+            'selectedStatus' => $selectedStatus,
+            'selectedNature' => $selectedNature,
             'search'         => $request->query('q'),
         ]);
     }
@@ -51,8 +70,31 @@ class AppointmentController extends Controller
             ->with('success', "Appointment for {$appointment->full_name} was saved successfully.");
     }
 
-    public function show(Appointment $appointment): View
+    public function bulkDestroy(Request $request): RedirectResponse
     {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:appointments,id'],
+        ]);
+
+        $ids = $data['ids'];
+
+        Appointment::whereIn('id', $ids)->update(['record_state' => 'deleted']);
+        Appointment::whereIn('id', $ids)->delete();
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', count($ids) > 1
+                ? "Selected appointments were moved to History."
+                : "Selected appointment was moved to History.");
+    }
+
+    public function show(Request $request, Appointment $appointment)
+    {
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($appointment);
+        }
+
         return view('appointments.show', compact('appointment'));
     }
 
@@ -70,11 +112,12 @@ class AppointmentController extends Controller
      */
     public function destroy(Appointment $appointment): RedirectResponse
     {
+        $appointment->update(['record_state' => 'deleted']);
         $appointment->delete();
 
         return redirect()
             ->route('appointments.index')
-            ->with('success', "Appointment for {$appointment->full_name} was moved to Trash.");
+            ->with('success', "Appointment for {$appointment->full_name} was moved to History.");
     }
 
     /**
@@ -112,9 +155,9 @@ class AppointmentController extends Controller
     {
         $appointment = Appointment::onlyTrashed()->findOrFail($id);
         $appointment->restore();
+        $appointment->update(['record_state' => 'active']);
 
-        return redirect()
-            ->route('appointments.trash')
+        return redirect()->back()
             ->with('success', "Appointment for {$appointment->full_name} was restored.");
     }
 
@@ -131,8 +174,184 @@ class AppointmentController extends Controller
     /**
      * CSV export of all active appointments.
      */
-    public function exportCsv(): StreamedResponse
+    public function exportAfa(Appointment $appointment, AppointmentFormService $service)
     {
+        // mark download and update workflow state
+        try {
+            $appointment->markDownloaded('afa');
+            $appointment->evaluateWorkflowState();
+        } catch (\Throwable $e) {
+            \Log::warning('Unable to record AFA download for appointment ' . $appointment->id . ': ' . $e->getMessage());
+        }
+
+        $filePath = $service->generate($appointment);
+        $safeName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '', $appointment->full_name);
+        $filename = sprintf('Appointment Form - %s.docx', $safeName ?: $appointment->transaction_number ?? $appointment->id);
+
+        return response()->download($filePath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function downloadChecklist(Appointment $appointment, AppointmentFormService $service)
+    {
+        try {
+            $appointment->markDownloaded('checklist');
+            $appointment->evaluateWorkflowState();
+        } catch (\Throwable $e) {
+            \Log::warning('Unable to record Checklist download for appointment ' . $appointment->id . ': ' . $e->getMessage());
+        }
+
+        $filePath = $service->generateChecklist($appointment);
+        $safeName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '', $appointment->full_name);
+        $filename = sprintf('Checklist - %s.xlsx', $safeName ?: $appointment->transaction_number ?? $appointment->id);
+
+        return response()->download($filePath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function downloadRai(Appointment $appointment, AppointmentFormService $service)
+    {
+        try {
+            $appointment->markDownloaded('rai');
+            $appointment->evaluateWorkflowState();
+        } catch (\Throwable $e) {
+            \Log::warning('Unable to record RAI download for appointment ' . $appointment->id . ': ' . $e->getMessage());
+        }
+
+        $filePath = $service->generateRai($appointment);
+        $safeName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '', $appointment->full_name);
+        $filename = sprintf('Report on Appointment Issued - %s.xlsx', $safeName ?: $appointment->transaction_number ?? $appointment->id);
+
+        return response()->download($filePath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function downloadFinalDeliberation(Appointment $appointment, AppointmentFormService $service)
+    {
+        try {
+            $appointment->markDownloaded('final');
+            $appointment->evaluateWorkflowState();
+        } catch (\Throwable $e) {
+            \Log::warning('Unable to record Final Deliberation download for appointment ' . $appointment->id . ': ' . $e->getMessage());
+        }
+
+        $filePath = $service->generateFinalDeliberation($appointment);
+        $safeName = str_replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], '', $appointment->full_name);
+        $filename = sprintf('Final Deliberation - %s.docx', $safeName ?: $appointment->transaction_number ?? $appointment->id);
+
+        return response()->download($filePath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function exportCsv(Request $request, AppointmentFormService $service)
+    {
+        $ids = $request->input('ids');
+
+        // If IDs provided, create a ZIP of generated appointment documents
+        if (is_array($ids) && count($ids) > 0) {
+            $appointments = Appointment::whereIn('id', $ids)->get();
+
+            if ($appointments->isEmpty()) {
+                abort(404, 'No appointments found for selected IDs.');
+            }
+
+            $outputDirectory = storage_path('app/temp/appointment-forms');
+            File::ensureDirectoryExists($outputDirectory);
+
+            $files = [];
+
+            foreach ($appointments as $a) {
+                $last = $a->last_name ?? '';
+                $first = $a->first_name ?? '';
+                $middle = $a->middle_name ?? '';
+
+                $safeLast = preg_replace('/[^A-Za-z0-9_]/', '_', trim(str_replace(' ', '_', $last)));
+                $safeFirst = preg_replace('/[^A-Za-z0-9_]/', '_', trim(str_replace(' ', '_', $first)));
+                $safeMiddle = $middle ? preg_replace('/[^A-Za-z0-9_]/', '_', trim(str_replace(' ', '_', $middle))) : null;
+
+                $txn = $a->transaction_number ?? $a->id;
+
+                // Folder name: Last_First(_Middle)-<transaction>-YYYY-MONTH-<token>.docx (as requested)
+                $year = now()->format('Y');
+                $month = strtoupper(now()->format('F'));
+                $token = substr(bin2hex(random_bytes(3)), 0, 6);
+
+                $nameParts = [$safeLast, $safeFirst];
+                if ($safeMiddle) { $nameParts[] = $safeMiddle; }
+                $personPart = implode('_', $nameParts);
+
+                $folderName = sprintf('%s-%s-%s-%s-%s.docx', $personPart, $txn, $year, $month, $token);
+
+                // Create the four files and add them under the folder path inside the ZIP
+                // 1) Appointment Form (Word)
+                try {
+                    $formPath = $service->generateWithTemplateFile($a, 'Appointment Form Generated Template.docx');
+                    try { $a->markDownloaded('afa'); } catch (\Throwable $e) { \Log::warning('Unable to mark AFA downloaded for ' . $a->id . ': ' . $e->getMessage()); }
+                    $files[] = ['path' => $formPath, 'name' => $folderName . '/' . sprintf('%s_Appointment.docx', $personPart)];
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to generate appointment form for ' . $txn . ': ' . $e->getMessage());
+                }
+
+                // 2) Final Deliberation (Word)
+                try {
+                    $fdPath = $service->generateFinalDeliberation($a);
+                    try { $a->markDownloaded('final'); } catch (\Throwable $e) { \Log::warning('Unable to mark Final downloaded for ' . $a->id . ': ' . $e->getMessage()); }
+                    $files[] = ['path' => $fdPath, 'name' => $folderName . '/' . sprintf('%s_FinalDeliberation.docx', $personPart)];
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to generate final deliberation for ' . $txn . ': ' . $e->getMessage());
+                }
+
+                // 3) Checklist (Excel)
+                try {
+                    $chkPath = $service->generateChecklist($a);
+                    try { $a->markDownloaded('checklist'); } catch (\Throwable $e) { \Log::warning('Unable to mark Checklist downloaded for ' . $a->id . ': ' . $e->getMessage()); }
+                    $files[] = ['path' => $chkPath, 'name' => $folderName . '/' . sprintf('%s_Checklist.xlsx', $personPart)];
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to generate checklist for ' . $txn . ': ' . $e->getMessage());
+                }
+
+                // 4) RAI (Excel)
+                try {
+                    $raiPath = $service->generateRai($a);
+                    try { $a->markDownloaded('rai'); } catch (\Throwable $e) { \Log::warning('Unable to mark RAI downloaded for ' . $a->id . ': ' . $e->getMessage()); }
+                    $files[] = ['path' => $raiPath, 'name' => $folderName . '/' . sprintf('%s_RAI.xlsx', $personPart)];
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to generate RAI for ' . $txn . ': ' . $e->getMessage());
+                }
+
+                // after attempting to generate files, evaluate if this appointment is now completed
+                try { $a->evaluateWorkflowState(); } catch (\Throwable $e) { \Log::warning('Unable to evaluate workflow state for appointment ' . $a->id . ': ' . $e->getMessage()); }
+            }
+
+            $zipName = 'appointments_' . now()->format('Ymd_His') . '.zip';
+            $zipPath = $outputDirectory . DIRECTORY_SEPARATOR . $zipName;
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new RuntimeException('Unable to create ZIP archive.');
+            }
+
+            foreach ($files as $f) {
+                $zip->addFile($f['path'], $f['name']);
+            }
+
+            $zip->close();
+
+            // Remove temp docx files now that they're in the ZIP
+            foreach ($files as $f) {
+                try { @unlink($f['path']); } catch (\Throwable $e) { }
+            }
+
+            return response()->download($zipPath, $zipName, [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
+        }
+
+        // Fallback: existing CSV export behaviour
         $appointments = Appointment::active()->orderByDesc('encoded_at')->get();
 
         $columns = [

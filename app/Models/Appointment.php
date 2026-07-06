@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
+    
+    protected $appends = ['display_record_state'];
 
     protected $fillable = [
         'transaction_number',
@@ -27,6 +29,7 @@ class Appointment extends Model
         'eligibility_type', 'eligibility_validity', 'eligibility_first_used',
         'date_original_appointment', 'date_last_promotion',
         'record_state', 'conclusion_reason', 'date_concluded',
+        'afa_downloaded_at', 'checklist_downloaded_at', 'rai_downloaded_at', 'final_deliberation_downloaded_at',
         'encoding_personnel', 'encoded_at',
     ];
 
@@ -40,6 +43,10 @@ class Appointment extends Model
         'date_original_appointment' => 'date',
         'date_last_promotion' => 'date',
         'date_concluded' => 'date',
+        'afa_downloaded_at' => 'datetime',
+        'checklist_downloaded_at' => 'datetime',
+        'rai_downloaded_at' => 'datetime',
+        'final_deliberation_downloaded_at' => 'datetime',
         'encoded_at' => 'datetime',
         'monthly_salary' => 'decimal:2',
         'compensation_numbers' => 'decimal:2',
@@ -65,10 +72,62 @@ class Appointment extends Model
         return "{$this->last_name}, {$this->first_name}{$middleInitial}";
     }
 
+    public function getDisplayRecordStateAttribute(): string
+    {
+        $state = $this->record_state;
+        if (! $state) {
+            return '';
+        }
+
+        return match ($state) {
+            'new' => 'Active',
+            'active' => 'Active',
+            'in_progress' => 'In Progress',
+            'completed' => 'Completed',
+            'archived' => 'Archived',
+            'deleted' => 'Deleted',
+            'concluded' => 'Concluded',
+            default => ucfirst($state),
+        };
+    }
+
+    public function markDownloaded(string $type): void
+    {
+        $column = match ($type) {
+            'afa' => 'afa_downloaded_at',
+            'checklist' => 'checklist_downloaded_at',
+            'rai' => 'rai_downloaded_at',
+            'final' => 'final_deliberation_downloaded_at',
+            default => null,
+        };
+
+        if ($column) {
+            $this->update([$column => now()]);
+        }
+    }
+
+    public function evaluateWorkflowState(): void
+    {
+        $fresh = $this->fresh();
+
+        $anyDownload = $fresh->afa_downloaded_at
+            || $fresh->checklist_downloaded_at
+            || $fresh->rai_downloaded_at
+            || $fresh->final_deliberation_downloaded_at;
+
+        if (! $anyDownload) {
+            return;
+        }
+
+        if (in_array($fresh->record_state, ['active', 'new'], true)) {
+            $fresh->update(['record_state' => 'in_progress']);
+        }
+    }
+
     /* ── Scopes ── */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('record_state', 'active');
+        return $query->whereIn('record_state', ['active', 'in_progress', 'completed']);
     }
 
     public function scopeConcluded(Builder $query): Builder
@@ -89,6 +148,19 @@ class Appointment extends Model
         if ($to) {
             $query->whereDate('date_concluded', '<=', $to);
         }
+        return $query;
+    }
+
+    public function scopeHistoryBetween(Builder $query, ?string $from, ?string $to): Builder
+    {
+        if ($from) {
+            $query->whereDate('encoded_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->whereDate('encoded_at', '<=', $to);
+        }
+
         return $query;
     }
 

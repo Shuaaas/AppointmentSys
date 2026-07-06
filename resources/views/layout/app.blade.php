@@ -13,17 +13,17 @@
 <aside class="sidebar">
     <div class="sidebar-brand">
         <i class="ti ti-users" aria-hidden="true"></i>
-        <span>HR Recruitment</span>
+        <span>HR Appointment</span>
     </div>
     <nav class="sidebar-nav" aria-label="Main navigation">
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
         </a>
         <a href="{{ route('appointments.index') }}" class="nav-item {{ request()->routeIs('appointments.*') ? 'active' : '' }}">
-            <i class="ti ti-file-description" aria-hidden="true"></i> Appointment data
+            <i class="ti ti-file-description" aria-hidden="true"></i> Appointment Data
         </a>
         <a href="{{ route('history.index') }}" class="nav-item {{ request()->routeIs('history.*') ? 'active' : '' }}">
-            <i class="ti ti-history" aria-hidden="true"></i> History
+            <i class="ti ti-archive" aria-hidden="true"></i> History
         </a>
     </nav>
     <div class="sidebar-collapse" id="sidebar-collapse-btn">

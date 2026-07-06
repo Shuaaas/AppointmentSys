@@ -60,8 +60,8 @@ return new class extends Migration
             $table->date('date_original_appointment')->nullable();
             $table->date('date_last_promotion')->nullable();
 
-            // ── Lifecycle / history tracking ──
-            $table->enum('record_state', ['active', 'concluded'])->default('active');
+            // ── Lifecycle / archive workflow tracking ──
+            $table->enum('record_state', ['new', 'in_progress', 'completed', 'archived', 'deleted'])->default('new');
             $table->string('conclusion_reason')->nullable(); // Retired, Resigned, Transferred, End of fixed term, etc.
             $table->date('date_concluded')->nullable();
 
