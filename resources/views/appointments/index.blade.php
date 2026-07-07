@@ -1,8 +1,37 @@
 @extends('layout.app')
 
-@section('title', 'Appointment Data Entry')
+@section('title')
+    @if(auth()->user()?->isRecords())
+        Transaction Numbers
+    @else
+        Appointment Data Entry
+    @endif
+@endsection
 
 @section('content')
+@if(auth()->user()?->isRecords())
+    <div class="dashboard-summary">
+        <div class="summary-card summary-needs">
+            <div class="summary-label">Needs Transaction Number</div>
+            <div class="summary-value">{{ $needsTNCount }}</div>
+        </div>
+        <div class="summary-card summary-completed-today">
+            <div class="summary-label">Completed today</div>
+            <div class="summary-value">{{ $completedTodayCount }}</div>
+        </div>
+        <div class="summary-card summary-total-month">
+            <div class="summary-label">Total this month</div>
+            <div class="summary-value">{{ $monthlyTotalCount }}</div>
+        </div>
+    </div>
+
+    <div class="records-tabs">
+        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'needs'])) }}" class="records-tab {{ $selectedTab === 'needs' ? 'active' : '' }}">Needs TN ({{ $needsTNCount }})</a>
+        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'completed'])) }}" class="records-tab {{ $selectedTab === 'completed' ? 'active' : '' }}">Completed ({{ $completedCount }})</a>
+        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'all'])) }}" class="records-tab {{ $selectedTab === 'all' ? 'active' : '' }}">All records</a>
+    </div>
+@endif
+
 <div class="action-bar">
     <form class="search-wrap" method="GET" action="{{ route('appointments.index') }}">
         <i class="ti ti-search" aria-hidden="true"></i>
@@ -18,9 +47,11 @@
         </select>
         <input type="hidden" name="date" value="{{ $selectedDate }}">
         <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
+        <input type="hidden" name="tab" value="{{ $selectedTab }}">
     </form>
 
     <form class="date-control" method="GET" action="{{ route('appointments.index') }}">
+        <input type="hidden" name="tab" value="{{ $selectedTab }}">
         <i class="ti ti-calendar" aria-hidden="true"></i>
         <label for="appt-date-select">Date encoded</label>
         <select id="appt-date-select" name="date" onchange="this.form.submit()">
@@ -37,26 +68,91 @@
         <input type="hidden" name="nature" value="{{ $selectedNature ?? '' }}">
     </form>
 
-    <div class="action-bar-right">
-        <!-- <a href="{{ route('appointments.export') }}" class="btn btn-secondary">
-            <i class="ti ti-download" aria-hidden="true"></i> Export CSV
-        </a> -->
-        <button type="button" class="btn btn-secondary" id="bulk-download-btn" onclick="submitBulkDownload()">
-            <i class="ti ti-zip" aria-hidden="true"></i> Download Selected (ZIP)
-        </button>
-        <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
-            <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
-        </button>
-        <button type="button" class="btn btn-primary" onclick="openWizard()">
-            <i class="ti ti-plus" aria-hidden="true"></i> Add new entry
-        </button>
-    </div>
+    @if(!auth()->user()?->isRecords() && !auth()->user()?->isManager())
+        <div class="action-bar-right">
+            <!-- <a href="{{ route('appointments.export') }}" class="btn btn-secondary">
+                <i class="ti ti-download" aria-hidden="true"></i> Export CSV
+            </a> -->
+            <button type="button" class="btn btn-secondary" id="bulk-download-btn" onclick="submitBulkDownload()">
+                <i class="ti ti-zip" aria-hidden="true"></i> Download Selected (ZIP)
+            </button>
+            <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
+                <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
+            </button>
+            <button type="button" class="btn btn-primary" onclick="openWizard()">
+                <i class="ti ti-plus" aria-hidden="true"></i> Add new entry
+            </button>
+        </div>
+    @endif
 </div>
 
-<div class="table-card">
-    
-    <div class="tbl-wrap" style="min-height:160px">
-        <table>
+@if(auth()->user()?->isRecords())
+    <div class="table-card records-tn-card">
+        <div class="tbl-wrap">
+            <table class="records-table">
+                <colgroup>
+                    <col style="width:42px">
+                    <col style="width:260px">
+                    <col style="width:170px">
+                    <col style="width:240px">
+                    <col style="width:140px">
+                    <col style="width:120px">
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>FULL NAME</th>
+                        <th>ITEM NO.</th>
+                        <th>SCHOOL / DIVISION</th>
+                        <th>NATURE OF APPT.</th>
+                        <th>DATE ENCODED</th>
+                        <th>TRANSACTION NUMBER</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($appointments as $i => $a)
+                        <tr class="data-row">
+                            <td>{{ $i + 1 }}</td>
+                            <td>
+                                <div class="name-text">{{ $a->full_name }}</div>
+                                <div class="small-text">{{ $a->position_title }}</div>
+                            </td>
+                            <td>{{ $a->plantilla_item_number ?: '—' }}</td>
+                            <td>{{ $a->school_district ?: '—' }}</td>
+                            <td><span class="badge badge-teal">{{ $a->nature_of_appointment ?: '—' }}</span></td>
+                            <td>{{ optional($a->encoded_at)->format('M j') }}</td>
+                            <td>
+                                <form method="POST" action="{{ route('appointments.updateTransactionNumber', $a) }}" class="tn-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="tn-input-row">
+                                        <input type="text" name="transaction_number" value="{{ old('transaction_number', $a->transaction_number) }}" placeholder="Enter TN...">
+                                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr class="no-rows">
+                            <td colspan="7" style="border-bottom:0;padding:18px 12px;">
+                                <p class="empty-note" style="margin:0;">No records found for this date.</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="footer-bar">
+            <span>Showing {{ $appointments->count() }} of {{ $appointments->count() }} result{{ $appointments->count() !== 1 ? 's' : '' }}</span>
+            <span class="footer-hint"><i class="ti ti-info-circle" aria-hidden="true"></i> You can only log the Transaction Number here. All other fields are managed by HR.</span>
+        </div>
+    </div>
+@else
+    <div class="table-card">
+        
+        <div class="tbl-wrap" style="min-height:160px">
+            <table>
             <colgroup>
                 <col style="width:38px"><col style="width:38px"><col style="width:175px">
                 <col style="width:125px"><col style="width:105px"><col style="width:105px">
@@ -81,10 +177,10 @@
                         </button>
 
                         <div id="status-menu" style="display:none;position:absolute;right:0;top:22px;background:#fff;border:1px solid rgba(0,0,0,0.08);box-shadow:0 6px 12px rgba(0,0,0,0.06);border-radius:4px;z-index:60;min-width:140px;">
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => '', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:inherit">All</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'active', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#1E90FF">Active</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'in_progress', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#FFB020">In Progress</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'completed', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#28A745">Completed</a>
+                                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => '', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:inherit">All</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'active', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#1E90FF">Active</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'in_progress', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#FFB020">In Progress</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'completed', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#28A745">Completed</a>
                         </div>
                     </th>
                     <th>Original appt.</th>
@@ -99,9 +195,11 @@
                         <td>
                             <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
                                 <span class="name-text">{{ $a->full_name }}</span>
-                                <button type="button" class="name-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Toggle details">
-                                    <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                                </button>
+                                @unless(auth()->user()?->isManager())
+                                    <button type="button" class="name-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Toggle details">
+                                        <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                @endunless
                             </div>
                             <div class="tn-code">{{ $a->transaction_number }}</div>
                         </td>
@@ -124,27 +222,29 @@
                         <td><span class="badge badge-teal">{{ $a->eligibility_type ?? '—' }}</span></td>
                         <td style="font-size:12px;color:var(--text-muted)">{{ $a->encoded_at->format('F j, Y g:i A') }}</td>
                     </tr>
-                    <tr class="dropdown-row" id="detail-{{ $a->id }}">
-                        <td colspan="9">
-                            <div class="drop-panel">
-                                <div class="drop-left">
-                                    <span class="drop-label">Downloadables</span>
-                                    <a href="{{ route('appointments.exportAfa', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Appointment</a>
-                                    <a href="{{ route('appointments.downloadChecklist', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-checklist" style="font-size:12px" aria-hidden="true"></i> Checklist</a>
-                                    <a href="{{ route('appointments.downloadRai', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> RAI</a>
-                                    <a href="{{ route('appointments.downloadFinalDeliberation', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Final Deliberation</a>
+                    @unless(auth()->user()?->isManager())
+                        <tr class="dropdown-row" id="detail-{{ $a->id }}">
+                            <td colspan="9">
+                                <div class="drop-panel">
+                                    <div class="drop-left">
+                                        <span class="drop-label">Downloadables</span>
+                                        <a href="{{ route('appointments.exportAfa', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Appointment</a>
+                                        <a href="{{ route('appointments.downloadChecklist', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-checklist" style="font-size:12px" aria-hidden="true"></i> Checklist</a>
+                                        <a href="{{ route('appointments.downloadRai', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> RAI</a>
+                                        <a href="{{ route('appointments.downloadFinalDeliberation', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Final Deliberation</a>
+                                    </div>
+                                    <div class="drop-right">
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="openViewSummary({{ $a->id }})"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i> View</button>
+                                        <button type="button" class="btn btn-success btn-sm" onclick="openEditWizard({{ $a->id }})"><i class="ti ti-edit" style="font-size:12px" aria-hidden="true"></i> Edit</button>
+                                        <form action="{{ route('appointments.destroy', $a) }}" method="POST" onsubmit="return false;" id="delete-form-{{ $a->id }}">
+                                            @csrf @method('DELETE')
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="openDelete({{ $a->id }}, '{{ addslashes($a->full_name) }}')"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i> Delete</button>
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="drop-right">
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="openViewSummary({{ $a->id }})"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i> View</button>
-                                    <button type="button" class="btn btn-success btn-sm" onclick="openEditWizard({{ $a->id }})"><i class="ti ti-edit" style="font-size:12px" aria-hidden="true"></i> Edit</button>
-                                    <form action="{{ route('appointments.destroy', $a) }}" method="POST" onsubmit="return false;" id="delete-form-{{ $a->id }}">
-                                        @csrf @method('DELETE')
-                                        <button type="button" class="btn btn-danger btn-sm" onclick="openDelete({{ $a->id }}, '{{ addslashes($a->full_name) }}')"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i> Delete</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                    @endunless
                 @empty
                     <tr class="no-rows">
                         <td colspan="9" style="border-bottom:0;padding:18px 12px;">
@@ -160,6 +260,8 @@
         <span class="footer-hint"><i class="ti ti-info-circle" aria-hidden="true"></i> Showing the latest encoded date by default — use the dropdown above to view other dates.</span>
     </div>
 </div>
+
+@endif
 
 @push('modals')
     @include('appointments.partials.wizard-modal')

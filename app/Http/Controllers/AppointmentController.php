@@ -15,9 +15,13 @@ class AppointmentController extends Controller
 {
     /**
      * List view — defaults to the latest encoded date only.
+     * All 4 roles can view (HR, Records, Manager, Admin) — the policy's
+     * viewAny() allows this; write actions below are what's actually gated.
      */
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Appointment::class);
+
         $availableDates = Appointment::active()
             ->selectRaw('DATE(encoded_at) as d')
             ->distinct()
@@ -27,11 +31,11 @@ class AppointmentController extends Controller
         $selectedDate = $request->query('date', $availableDates->first());
         $selectedStatus = $request->query('status');
         $selectedNature = $request->query('nature');
+        $selectedTab = $request->query('tab', 'needs');
 
-        // Show non-archived active workflow records by default
         $visibleStates = ['new', 'active', 'in_progress', 'completed'];
 
-        $appointments = Appointment::whereIn('record_state', $visibleStates)
+        $appointmentsQuery = Appointment::whereIn('record_state', $visibleStates)
             ->when($selectedStatus, function ($q, $selectedStatus) {
                 if ($selectedStatus === 'active') {
                     $q->whereIn('record_state', ['new', 'active']);
@@ -43,22 +47,62 @@ class AppointmentController extends Controller
             })
             ->when($selectedNature, fn ($q) => $q->where('nature_of_appointment', $selectedNature))
             ->when($selectedDate, fn ($q) => $q->whereDate('encoded_at', $selectedDate))
-            ->search($request->query('q'))
-            ->orderByDesc('encoded_at')
-            ->get();
+            ->search($request->query('q'));
+
+        if ($request->user()->isRecords()) {
+            $appointmentsQuery = $appointmentsQuery->when($selectedTab === 'needs', fn ($q) => $q->where(function ($query) {
+                    $query->whereNull('transaction_number')->orWhere('transaction_number', '');
+                }))
+                ->when($selectedTab === 'completed', fn ($q) => $q->whereNotNull('transaction_number')->where('transaction_number', '<>', ''));
+        }
+
+        $appointments = $appointmentsQuery->orderByDesc('encoded_at')->get();
+
+        $needsTNCount = Appointment::whereIn('record_state', $visibleStates)
+            ->where(function ($query) {
+                $query->whereNull('transaction_number')->orWhere('transaction_number', '');
+            })
+            ->count();
+
+        $completedCount = Appointment::whereIn('record_state', $visibleStates)
+            ->whereNotNull('transaction_number')
+            ->where('transaction_number', '<>', '')
+            ->count();
+
+        $completedTodayCount = Appointment::whereIn('record_state', $visibleStates)
+            ->whereNotNull('transaction_number')
+            ->where('transaction_number', '<>', '')
+            ->whereDate('updated_at', now())
+            ->count();
+
+        $monthlyTotalCount = Appointment::whereIn('record_state', $visibleStates)
+            ->whereYear('encoded_at', now()->year)
+            ->whereMonth('encoded_at', now()->month)
+            ->count();
 
         return view('appointments.index', [
-            'appointments'   => $appointments,
-            'availableDates' => $availableDates,
-            'selectedDate'   => $selectedDate,
-            'selectedStatus' => $selectedStatus,
-            'selectedNature' => $selectedNature,
-            'search'         => $request->query('q'),
+            'appointments'       => $appointments,
+            'availableDates'     => $availableDates,
+            'selectedDate'       => $selectedDate,
+            'selectedStatus'     => $selectedStatus,
+            'selectedNature'     => $selectedNature,
+            'selectedTab'        => $selectedTab,
+            'search'             => $request->query('q'),
+            'needsTNCount'       => $needsTNCount,
+            'completedCount'     => $completedCount,
+            'completedTodayCount'=> $completedTodayCount,
+            'monthlyTotalCount'  => $monthlyTotalCount,
         ]);
     }
 
+    /**
+     * Create a new appointment record.
+     * Policy: HR + Admin only.
+     */
     public function store(StoreAppointmentRequest $request): RedirectResponse
     {
+        $this->authorize('create', Appointment::class);
+
         $data = $request->validated();
         $data['encoding_personnel'] = $data['encoding_personnel'] ?? auth()->user()->name ?? 'HRMO Offline Admin';
         $data['record_state'] = 'active';
@@ -70,8 +114,15 @@ class AppointmentController extends Controller
             ->with('success', "Appointment for {$appointment->full_name} was saved successfully.");
     }
 
+    /**
+     * Bulk soft-delete to History/Trash.
+     * Policy: Admin only. Checked directly (not per-model) since this
+     * spans an arbitrary set of records in one request.
+     */
     public function bulkDestroy(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->isAdmin(), 403, 'Only Admin can delete appointments.');
+
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:appointments,id'],
@@ -91,6 +142,8 @@ class AppointmentController extends Controller
 
     public function show(Request $request, Appointment $appointment)
     {
+        $this->authorize('view', $appointment);
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json($appointment);
         }
@@ -98,8 +151,15 @@ class AppointmentController extends Controller
         return view('appointments.show', compact('appointment'));
     }
 
+    /**
+     * Full-record update.
+     * Policy: HR + Admin only — Records must use updateTransactionNumber()
+     * below instead, which only touches one column.
+     */
     public function update(StoreAppointmentRequest $request, Appointment $appointment): RedirectResponse
     {
+        $this->authorize('update', $appointment);
+
         $appointment->update($request->validated());
 
         return redirect()
@@ -108,10 +168,33 @@ class AppointmentController extends Controller
     }
 
     /**
+     * Records role: the ONLY field they can edit.
+     * Policy: Records + Admin. Deliberately validates and writes
+     * a single column — no other field can be smuggled into this request.
+     */
+    public function updateTransactionNumber(Request $request, Appointment $appointment): RedirectResponse
+    {
+        $this->authorize('updateTransactionNumber', $appointment);
+
+        $request->validate([
+            'transaction_number' => ['required', 'string', 'max:255'],
+        ]);
+
+        $appointment->update($request->only('transaction_number'));
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', "Transaction number updated for {$appointment->full_name}.");
+    }
+
+    /**
      * Soft delete — moves the record to Trash.
+     * Policy: Admin only.
      */
     public function destroy(Appointment $appointment): RedirectResponse
     {
+        $this->authorize('delete', $appointment);
+
         $appointment->update(['record_state' => 'deleted']);
         $appointment->delete();
 
@@ -122,9 +205,13 @@ class AppointmentController extends Controller
 
     /**
      * Mark an appointment as concluded — moves it into History.
+     * Policy: mapped to "archive" ability — HR + Admin, matching
+     * the "HR → archive records" permission.
      */
     public function conclude(Request $request, Appointment $appointment): RedirectResponse
     {
+        $this->authorize('archive', $appointment);
+
         $request->validate([
             'conclusion_reason' => ['required', 'string', 'max:255'],
             'date_concluded'    => ['required', 'date'],
@@ -143,17 +230,23 @@ class AppointmentController extends Controller
 
     /**
      * Trash bin — lists soft-deleted records.
+     * Policy: Admin only (kept as locked-down as delete itself).
      */
-    public function trash(): View
+    public function trash(Request $request): View
     {
+        abort_unless($request->user()->isAdmin(), 403);
+
         $trashed = Appointment::onlyTrashed()->orderByDesc('deleted_at')->get();
 
         return view('appointments.trash', compact('trashed'));
     }
 
-    public function restore(int $id): RedirectResponse
+    public function restore(Request $request, int $id): RedirectResponse
     {
         $appointment = Appointment::onlyTrashed()->findOrFail($id);
+
+        $this->authorize('restore', $appointment);
+
         $appointment->restore();
         $appointment->update(['record_state' => 'active']);
 
@@ -161,9 +254,12 @@ class AppointmentController extends Controller
             ->with('success', "Appointment for {$appointment->full_name} was restored.");
     }
 
-    public function forceDelete(int $id): RedirectResponse
+    public function forceDelete(Request $request, int $id): RedirectResponse
     {
         $appointment = Appointment::onlyTrashed()->findOrFail($id);
+
+        $this->authorize('forceDelete', $appointment);
+
         $appointment->forceDelete();
 
         return redirect()
@@ -172,11 +268,13 @@ class AppointmentController extends Controller
     }
 
     /**
-     * CSV export of all active appointments.
+     * Document generation (Word/Excel). Policy: mapped to "print" —
+     * HR + Admin only, matching "HR → Print documents."
      */
     public function exportAfa(Appointment $appointment, AppointmentFormService $service)
     {
-        // mark download and update workflow state
+        $this->authorize('print', $appointment);
+
         try {
             $appointment->markDownloaded('afa');
             $appointment->evaluateWorkflowState();
@@ -195,6 +293,8 @@ class AppointmentController extends Controller
 
     public function downloadChecklist(Appointment $appointment, AppointmentFormService $service)
     {
+        $this->authorize('print', $appointment);
+
         try {
             $appointment->markDownloaded('checklist');
             $appointment->evaluateWorkflowState();
@@ -213,6 +313,8 @@ class AppointmentController extends Controller
 
     public function downloadRai(Appointment $appointment, AppointmentFormService $service)
     {
+        $this->authorize('print', $appointment);
+
         try {
             $appointment->markDownloaded('rai');
             $appointment->evaluateWorkflowState();
@@ -231,6 +333,8 @@ class AppointmentController extends Controller
 
     public function downloadFinalDeliberation(Appointment $appointment, AppointmentFormService $service)
     {
+        $this->authorize('print', $appointment);
+
         try {
             $appointment->markDownloaded('final');
             $appointment->evaluateWorkflowState();
@@ -247,11 +351,22 @@ class AppointmentController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    /**
+     * Bulk document generation (ZIP) or fallback CSV export.
+     * Policy: mapped to "print" — HR + Admin only, since the primary
+     * path here generates official documents, not just a data export.
+     * Checked directly (class-level) since this can act on many records.
+     */
     public function exportCsv(Request $request, AppointmentFormService $service)
     {
+        abort_unless(
+            $request->user()->isHr() || $request->user()->isAdmin(),
+            403,
+            'Only HR and Admin can export or generate appointment documents.'
+        );
+
         $ids = $request->input('ids');
 
-        // If IDs provided, create a ZIP of generated appointment documents
         if (is_array($ids) && count($ids) > 0) {
             $appointments = Appointment::whereIn('id', $ids)->get();
 
@@ -275,7 +390,6 @@ class AppointmentController extends Controller
 
                 $txn = $a->transaction_number ?? $a->id;
 
-                // Folder name: Last_First(_Middle)-<transaction>-YYYY-MONTH-<token>.docx (as requested)
                 $year = now()->format('Y');
                 $month = strtoupper(now()->format('F'));
                 $token = substr(bin2hex(random_bytes(3)), 0, 6);
@@ -286,8 +400,6 @@ class AppointmentController extends Controller
 
                 $folderName = sprintf('%s-%s-%s-%s-%s.docx', $personPart, $txn, $year, $month, $token);
 
-                // Create the four files and add them under the folder path inside the ZIP
-                // 1) Appointment Form (Word)
                 try {
                     $formPath = $service->generateWithTemplateFile($a, 'Appointment Form Generated Template.docx');
                     try { $a->markDownloaded('afa'); } catch (\Throwable $e) { \Log::warning('Unable to mark AFA downloaded for ' . $a->id . ': ' . $e->getMessage()); }
@@ -296,7 +408,6 @@ class AppointmentController extends Controller
                     \Log::error('Failed to generate appointment form for ' . $txn . ': ' . $e->getMessage());
                 }
 
-                // 2) Final Deliberation (Word)
                 try {
                     $fdPath = $service->generateFinalDeliberation($a);
                     try { $a->markDownloaded('final'); } catch (\Throwable $e) { \Log::warning('Unable to mark Final downloaded for ' . $a->id . ': ' . $e->getMessage()); }
@@ -305,7 +416,6 @@ class AppointmentController extends Controller
                     \Log::error('Failed to generate final deliberation for ' . $txn . ': ' . $e->getMessage());
                 }
 
-                // 3) Checklist (Excel)
                 try {
                     $chkPath = $service->generateChecklist($a);
                     try { $a->markDownloaded('checklist'); } catch (\Throwable $e) { \Log::warning('Unable to mark Checklist downloaded for ' . $a->id . ': ' . $e->getMessage()); }
@@ -314,7 +424,6 @@ class AppointmentController extends Controller
                     \Log::error('Failed to generate checklist for ' . $txn . ': ' . $e->getMessage());
                 }
 
-                // 4) RAI (Excel)
                 try {
                     $raiPath = $service->generateRai($a);
                     try { $a->markDownloaded('rai'); } catch (\Throwable $e) { \Log::warning('Unable to mark RAI downloaded for ' . $a->id . ': ' . $e->getMessage()); }
@@ -323,7 +432,6 @@ class AppointmentController extends Controller
                     \Log::error('Failed to generate RAI for ' . $txn . ': ' . $e->getMessage());
                 }
 
-                // after attempting to generate files, evaluate if this appointment is now completed
                 try { $a->evaluateWorkflowState(); } catch (\Throwable $e) { \Log::warning('Unable to evaluate workflow state for appointment ' . $a->id . ': ' . $e->getMessage()); }
             }
 
@@ -341,7 +449,6 @@ class AppointmentController extends Controller
 
             $zip->close();
 
-            // Remove temp docx files now that they're in the ZIP
             foreach ($files as $f) {
                 try { @unlink($f['path']); } catch (\Throwable $e) { }
             }
@@ -351,7 +458,6 @@ class AppointmentController extends Controller
             ])->deleteFileAfterSend(true);
         }
 
-        // Fallback: existing CSV export behaviour
         $appointments = Appointment::active()->orderByDesc('encoded_at')->get();
 
         $columns = [

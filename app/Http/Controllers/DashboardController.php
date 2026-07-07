@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -70,7 +71,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return view('dashboard.index', [
+        $viewData = [
             'totalActive'      => $totalActive,
             'permanentCount'   => $permanentCount,
             'tempCount'        => $tempCount,
@@ -78,6 +79,25 @@ class DashboardController extends Controller
             'trend'            => $trend,
             'statusBreakdown'  => $statusBreakdown,
             'recent'           => $recent,
-        ]);
+        ];
+
+        if (auth()->user()?->isAdmin()) {
+            $viewData = array_merge($viewData, [
+                'totalAccounts'   => User::count(),
+                'activeUsers'     => User::where('is_active', true)->count(),
+                'pendingCount'    => User::where('is_active', false)
+                    ->whereNotNull('requested_role')
+                    ->count(),
+                'pendingRequests' => User::where('is_active', false)
+                    ->whereNotNull('requested_role')
+                    ->orderByDesc('created_at')
+                    ->get(),
+                'activeAccounts'  => User::where('is_active', true)
+                    ->orderBy('name')
+                    ->get(),
+            ]);
+        }
+
+        return view('dashboard.index', $viewData);
     }
 }
