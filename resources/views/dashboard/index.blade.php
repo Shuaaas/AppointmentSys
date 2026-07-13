@@ -229,7 +229,7 @@
                 @endforeach
             </div>
             <div class="chart-legend">
-                <span><span class="legend-dot" style="background:var(--accent)"></span>Appointments encoded</span>
+                    <span><span class="legend-dot" style="background:var(--hr-primary, #003087)"></span>Appointments encoded</span>
             </div>
         </div>
 

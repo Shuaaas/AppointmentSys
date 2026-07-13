@@ -4,31 +4,34 @@
     @if(auth()->user()?->isRecords())
         Transaction Numbers
     @else
-        Appointment Data Entry
+        Appointment Data
     @endif
 @endsection
 
 @section('content')
 @if(auth()->user()?->isRecords())
-    <div class="dashboard-summary">
-        <div class="summary-card summary-needs">
-            <div class="summary-label">Needs Transaction Number</div>
-            <div class="summary-value">{{ $needsTNCount }}</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="stat-card">
+            <div class="stat-head">
+                <span class="stat-label">Needs Transaction Number</span>
+                <span class="stat-icon"><i class="ti ti-file-text" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value">{{ $needsTNCount }}</div>
         </div>
-        <div class="summary-card summary-completed-today">
-            <div class="summary-label">Completed today</div>
-            <div class="summary-value">{{ $completedTodayCount }}</div>
+        <div class="stat-card">
+            <div class="stat-head">
+                <span class="stat-label">Completed today</span>
+                <span class="stat-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value">{{ $completedTodayCount }}</div>
         </div>
-        <div class="summary-card summary-total-month">
-            <div class="summary-label">Total this month</div>
-            <div class="summary-value">{{ $monthlyTotalCount }}</div>
+        <div class="stat-card">
+            <div class="stat-head">
+                <span class="stat-label">Total this month</span>
+                <span class="stat-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value">{{ $monthlyTotalCount }}</div>
         </div>
-    </div>
-
-    <div class="records-tabs">
-        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'needs'])) }}" class="records-tab {{ $selectedTab === 'needs' ? 'active' : '' }}">Needs TN ({{ $needsTNCount }})</a>
-        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'completed'])) }}" class="records-tab {{ $selectedTab === 'completed' ? 'active' : '' }}">Completed ({{ $completedCount }})</a>
-        <a href="{{ route('appointments.index', array_merge(request()->query(), ['tab' => 'all'])) }}" class="records-tab {{ $selectedTab === 'all' ? 'active' : '' }}">All records</a>
     </div>
 @endif
 
@@ -79,9 +82,9 @@
             <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
                 <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
             </button>
-            <button type="button" class="btn btn-primary" onclick="openWizard()">
+            <a href="{{ route('appointments.create') }}" class="btn btn-primary add-entry-btn">
                 <i class="ti ti-plus" aria-hidden="true"></i> Add new entry
-            </button>
+            </a>
         </div>
     @endif
 </div>
@@ -153,14 +156,14 @@
         
         <div class="tbl-wrap" style="min-height:160px">
             <table>
-            <colgroup>
-                <col style="width:38px"><col style="width:38px"><col style="width:175px">
-                <col style="width:125px"><col style="width:105px"><col style="width:105px">
-                <col style="width:105px"><col style="width:80px"><col style="width:130px">
-            </colgroup>
+                <colgroup>
+                    @unless(auth()->user()?->isManager())<col style="width:38px">@endunless<col style="width:38px"><col style="width:175px">
+                    <col style="width:125px"><col style="width:105px"><col style="width:105px">
+                    <col style="width:105px"><col style="width:80px"><col style="width:130px">
+                </colgroup>
             <thead>
-                <tr>
-                    <th><input type="checkbox" id="select-all" aria-label="Select all rows"></th><th>#</th><th>Full name</th><th>School / district</th>
+                    <tr>
+                        @unless(auth()->user()?->isManager())<th><input type="checkbox" id="select-all" aria-label="Select all rows"></th>@endunless<th>#</th><th>Full name</th><th>School / district</th>
                     <th>Nature of appt.</th>
                     <th style="white-space:nowrap;position:relative">
                         @php
@@ -190,7 +193,7 @@
             <tbody>
                 @forelse ($appointments as $i => $a)
                     <tr class="data-row" id="row-{{ $a->id }}">
-                        <td><input type="checkbox" class="select-row" value="{{ $a->id }}" aria-label="Select row"></td>
+                        @unless(auth()->user()?->isManager())<td><input type="checkbox" class="select-row" value="{{ $a->id }}" aria-label="Select row"></td>@endunless
                         <td style="color:var(--text-muted)">{{ $i + 1 }}</td>
                         <td>
                             <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
@@ -201,7 +204,7 @@
                                     </button>
                                 @endunless
                             </div>
-                            <div class="tn-code">{{ $a->transaction_number }}</div>
+                            @unless(auth()->user()?->isHr())<div class="tn-code">{{ $a->transaction_number }}</div>@endunless
                         </td>
                         <td>{{ $a->school_district }}</td>
                         <td><span class="badge badge-teal">{{ $a->nature_of_appointment }}</span></td>
@@ -228,10 +231,10 @@
                                 <div class="drop-panel">
                                     <div class="drop-left">
                                         <span class="drop-label">Downloadables</span>
-                                        <a href="{{ route('appointments.exportAfa', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Appointment</a>
-                                        <a href="{{ route('appointments.downloadChecklist', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-checklist" style="font-size:12px" aria-hidden="true"></i> Checklist</a>
-                                        <a href="{{ route('appointments.downloadRai', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> RAI</a>
-                                        <a href="{{ route('appointments.downloadFinalDeliberation', $a) }}" class="btn btn-secondary btn-sm doc-download" data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Final Deliberation</a>
+                                        <a href="{{ route('appointments.exportAfa', $a) }}" class="btn btn-secondary btn-sm doc-download" data-no-loader data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Appointment</a>
+                                        <a href="{{ route('appointments.downloadChecklist', $a) }}" class="btn btn-secondary btn-sm doc-download" data-no-loader data-appointment-id="{{ $a->id }}"><i class="ti ti-checklist" style="font-size:12px" aria-hidden="true"></i> Checklist</a>
+                                        <a href="{{ route('appointments.downloadRai', $a) }}" class="btn btn-secondary btn-sm doc-download" data-no-loader data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> RAI</a>
+                                        <a href="{{ route('appointments.downloadFinalDeliberation', $a) }}" class="btn btn-secondary btn-sm doc-download" data-no-loader data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Final Deliberation</a>
                                     </div>
                                     <div class="drop-right">
                                         <button type="button" class="btn btn-primary btn-sm" onclick="openViewSummary({{ $a->id }})"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i> View</button>
@@ -261,6 +264,21 @@
     </div>
 </div>
 
+@endif
+
+@if(session('tn_saved'))
+    <div class="overlay show" id="tn-saved-overlay" style="z-index:300">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-body" style="text-align:center;padding:30px 28px">
+                <div style="font-size:2.6rem;color:var(--green)"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+                <h5 style="font-weight:800;margin:10px 0 2px;color:var(--text-primary)">Transaction number saved</h5>
+                <p style="font-size:.85rem;color:var(--text-muted);margin:0 0 14px">{{ session('tn_name') }}</p>
+                <div style="background:var(--accent-light);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:1.05rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)">{{ session('tn_saved') }}</div>
+                <p style="font-size:.78rem;color:var(--text-muted);margin:12px 0 0">Please double-check the number above for any typos.</p>
+                <button type="button" class="btn btn-primary" style="margin-top:16px;width:100%" onclick="document.getElementById('tn-saved-overlay').classList.remove('show')">Done</button>
+            </div>
+        </div>
+    </div>
 @endif
 
 @push('modals')
@@ -380,6 +398,17 @@ function populateWizardForm(data) {
     setValue('f-eligfirst', data.eligibility_first_used);
     setValue('f-doa', data.date_original_appointment);
     setValue('f-dlp', data.date_last_promotion);
+
+    // New template fields
+    setValue('f-natural', data.natural_vacancy);
+    setValue('f-dosign', data.date_of_signing);
+    setValue('f-education', data.education);
+    setValue('f-shs', data.senior_high_school);
+    setValue('f-strand', data.senior_high_strand);
+    setValue('f-nonteaching', data.non_teaching);
+
+    if (typeof syncChecklist === 'function') syncChecklist();
+    if (typeof syncFinalDeliberation === 'function') syncFinalDeliberation();
 }
 
 function openViewSummary(id) {
@@ -561,12 +590,27 @@ async function handleDocumentDownload(event, link) {
     }
 
     const appointmentId = link.dataset.appointmentId;
+    const originalHtml = link.innerHTML;
+
     link.dataset.downloading = '1';
     link.setAttribute('aria-busy', 'true');
     link.classList.add('is-downloading');
+    link.innerHTML = '<i class="ti ti-loader ti-spin" style="font-size:12px" aria-hidden="true"></i>';
+
+    const clearLoading = () => {
+        delete link.dataset.downloading;
+        link.removeAttribute('aria-busy');
+        link.classList.remove('is-downloading');
+        link.innerHTML = originalHtml;
+    };
 
     try {
-        const response = await fetch(link.href);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000);
+
+        const response = await fetch(link.href, { signal: controller.signal });
+        clearTimeout(timeout);
+
         if (!response.ok) {
             throw new Error('Download failed.');
         }
@@ -574,14 +618,17 @@ async function handleDocumentDownload(event, link) {
         const blob = await response.blob();
         const filename = parseDownloadFilename(response.headers.get('Content-Disposition'));
         triggerBrowserDownload(blob, filename);
-        await refreshAppointmentStatus(appointmentId);
     } catch (error) {
-        alert('Unable to download document. Please try again.');
+        if (error.name !== 'AbortError') {
+            alert('Unable to download document. Please try again.');
+        }
     } finally {
-        delete link.dataset.downloading;
-        link.removeAttribute('aria-busy');
-        link.classList.remove('is-downloading');
+        clearLoading();
     }
+
+    // Refresh the status badge in the background so it can never block
+    // clearing the download spinner.
+    refreshAppointmentStatus(appointmentId).catch(() => {});
 }
 
 async function downloadResponseAsFile(response, fallbackName) {
@@ -679,7 +726,9 @@ function submitBulkDownload() {
 
             return downloadResponseAsFile(response, 'appointments.zip');
         })
-        .then(() => Promise.all(ids.map(id => refreshAppointmentStatus(id))))
+        .then(() => {
+            ids.forEach(id => refreshAppointmentStatus(id).catch(() => {}));
+        })
         .catch(() => {
             alert('Unable to download selected appointments. Please try again.');
         })

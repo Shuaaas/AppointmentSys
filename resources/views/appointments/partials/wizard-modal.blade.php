@@ -12,110 +12,128 @@
             <div class="modal-body">
 
                 <div class="wz-progress">
-                    <div class="wz-step-dot active" data-step="0"><div class="wz-dot">1</div><span class="wz-dot-label">Personal</span></div>
-                    <div class="wz-step-dot" data-step="1"><div class="wz-dot">2</div><span class="wz-dot-label">Position</span></div>
-                    <div class="wz-step-dot" data-step="2"><div class="wz-dot">3</div><span class="wz-dot-label">Agency</span></div>
-                    <div class="wz-step-dot" data-step="3"><div class="wz-dot">4</div><span class="wz-dot-label">Eligibility</span></div>
+                    <div class="wz-step-dot active" data-step="0"><div class="wz-dot">1</div><span class="wz-dot-label">Appointment</span></div>
+                    <div class="wz-step-dot" data-step="1"><div class="wz-dot">2</div><span class="wz-dot-label">Checklist</span></div>
+                    <div class="wz-step-dot" data-step="2"><div class="wz-dot">3</div><span class="wz-dot-label">RAI</span></div>
+                    <div class="wz-step-dot" data-step="3"><div class="wz-dot">4</div><span class="wz-dot-label">Final Deliberation</span></div>
                     <div class="wz-step-dot" data-step="4"><div class="wz-dot">5</div><span class="wz-dot-label">Review</span></div>
                 </div>
 
-                {{-- STEP 1: Personal --}}
+                {{-- STEP 1: Appointment --}}
                 <div class="step-panel active" id="wz-step-0">
                     <div class="wz-section-head">
-                        <div class="wz-icon"><i class="ti ti-user" aria-hidden="true"></i></div>
-                        <div><div class="wz-section-title">Personal information</div><div class="wz-section-sub">Basic details about the appointee</div></div>
+                        <div class="wz-icon"><i class="ti ti-file-text" aria-hidden="true"></i></div>
+                        <div><div class="wz-section-title">Appointment</div><div class="wz-section-sub">Core appointment details</div></div>
                     </div>
                     <div class="wz-grid cols3">
-                        <div class="wz-field"><label>Last name *</label><input type="text" name="last_name" id="f-last" placeholder="e.g. Dela Cruz" required></div>
-                        <div class="wz-field"><label>First name *</label><input type="text" name="first_name" id="f-first" placeholder="e.g. Maria" required></div>
+                        <div class="wz-field"><label>Employee last name *</label><input type="text" name="last_name" id="f-last" placeholder="e.g. Dela Cruz" required></div>
+                        <div class="wz-field"><label>Employee first name *</label><input type="text" name="first_name" id="f-first" placeholder="e.g. Maria" required></div>
                         <div class="wz-field"><label>Middle name</label><input type="text" name="middle_name" id="f-middle" placeholder="Optional"></div>
-                        <div class="wz-field"><label>Extension name</label><input type="text" name="extension_name" id="f-ext" placeholder="Jr., Sr., III"></div>
-                        <div class="wz-field"><label>Sex</label>
-                            <select name="sex" id="f-sex"><option value="">Select</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select>
-                        </div>
-                        <div class="wz-field"><label>Date of birth</label><input type="date" name="date_of_birth" id="f-dob"></div>
-                        <div class="wz-field"><label>TIN</label><input type="text" name="tin" id="f-tin" placeholder="000-000-000"></div>
-                        <div class="wz-field"><label>PWD?</label><select name="pwd" id="f-pwd"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-                        <div class="wz-field"><label>IP group member?</label><select name="ip_group_member" id="f-ip"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-                        <div class="wz-field span3"><label>Ethnicity (if IP group member)</label><input type="text" name="ethnicity" id="f-ethnicity" placeholder="e.g. Tagalog, Ilocano, Maranao"></div>
-                    </div>
-                </div>
 
-                {{-- STEP 2: Position & Salary --}}
-                <div class="step-panel" id="wz-step-1">
-                    <div class="wz-section-head">
-                        <div class="wz-icon"><i class="ti ti-briefcase" aria-hidden="true"></i></div>
-                        <div><div class="wz-section-title">Position and salary</div><div class="wz-section-sub">Role, compensation, and employment details</div></div>
-                    </div>
-                    <div class="wz-grid">
-                        <div class="wz-field span2"><label>Position title *</label><input type="text" name="position_title" id="f-pos" placeholder="e.g. Teacher III" required></div>
-                        <div class="wz-field"><label>Position from</label><input type="date" name="position_from" id="f-pfrom"></div>
-                        <div class="wz-field"><label>Position to</label><input type="date" name="position_to" id="f-pto"></div>
-                        <div class="wz-field"><label>Salary / Pay grade</label>
+                        <div class="wz-field"><label>Extension name</label><input type="text" name="extension_name" id="f-ext" placeholder="Jr., Sr., III"></div>
+                        <div class="wz-field span2"><label>Position *</label><input type="text" name="position_title" id="f-pos" placeholder="e.g. Teacher III" required></div>
+
+                        <div class="wz-field"><label>Salary grade</label>
                             <select name="salary_grade" id="f-sg">
                                 <option value="">Select grade</option>
                                 @for ($i = 1; $i <= 20; $i++)<option value="SG-{{ $i }}">SG-{{ $i }}</option>@endfor
                             </select>
                         </div>
-                        <div class="wz-field"><label>Pay grade step</label>
-                            <select name="salary_grade_step" id="f-step">
-                                <option value="">Select step</option>
-                                @for ($i = 1; $i <= 8; $i++)<option value="Step {{ $i }}">Step {{ $i }}</option>@endfor
-                            </select>
-                        </div>
-                        <div class="wz-field"><label>Monthly salary (₱)</label><input type="text" name="monthly_salary" id="f-sal" placeholder="e.g. 25439.00"></div>
-                        <div class="wz-field"><label>Employee status *</label>
+                        <div class="wz-field"><label>Employment status *</label>
                             <select name="employee_status" id="f-estatus" required>
                                 <option value="">Select</option><option>Permanent</option><option>Temporary</option><option>Casual</option><option>Contractual</option><option>Coterminous</option>
                             </select>
                         </div>
-                        <div class="wz-field span2"><label>Compensation in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos"></div>
-                        <div class="wz-field span2"><label>Compensation in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00"></div>
-                        <div class="wz-field"><label>Nature of appointment *</label>
+                        <div class="wz-field"><label>District</label><input type="text" name="school_district" id="f-school" placeholder="e.g. Batangas NHS"></div>
+
+                        <div class="wz-field"><label>School</label><input type="text" name="school" id="f-school-new" placeholder="e.g. Batangas National High School"></div>
+                        <div class="wz-field"><label>Plantilla number</label><input type="text" name="plantilla_item_number" id="f-plantilla-item" placeholder="e.g. OSEC-DECSB-T3-123456"></div>
+                        <div class="wz-field"><label>Page number</label><input type="text" name="plantilla_page_number" id="f-plantilla-page" placeholder="e.g. 12"></div>
+
+                        <div class="wz-field span3"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos"></div>
+
+                        <div class="wz-field span2"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00"></div>
+                        <div class="wz-field"><label>Appointment nature *</label>
                             <select name="nature_of_appointment" id="f-nature" required>
                                 <option value="">Select</option><option>Original</option><option>Promotion</option><option>Transfer</option><option>Reappointment</option><option>Reinstatement</option>
                             </select>
                         </div>
-                        <div class="wz-field"><label>Reason (if applicable)</label><input type="text" name="reason" id="f-reason" placeholder="e.g. Transferred to another unit"></div>
-                        <div class="wz-field"><label>Position level</label><select name="position_level" id="f-poslevel"><option value="">Select</option><option>First Level</option><option>Second Level</option><option>Third Level</option></select></div>
-                        <div class="wz-field"><label>Appointment status</label><select name="appointment_status" id="f-aptstatus"><option value="">Select</option><option>Original</option><option>Renewal</option><option>Reappointment</option></select></div>
+
+                        <div class="wz-field"><label>Vice</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name"></div>
+                        <div class="wz-field"><label>Natural vacancy</label><input type="text" name="natural_vacancy" id="f-natural" placeholder="e.g. Yes / No"></div>
+                        <div class="wz-field"><label>Date of appointment</label><input type="date" name="date_original_appointment" id="f-doa"></div>
+
+                        <div class="wz-field"><label>Date of signing</label><input type="date" name="date_of_signing" id="f-dosign"></div>
+                        <div class="wz-field"><label>Date of validity</label><input type="date" name="eligibility_validity" id="f-eligvalid"></div>
                     </div>
                 </div>
 
-                {{-- STEP 3: Agency --}}
+                {{-- STEP 2: Checklist --}}
+                <div class="step-panel" id="wz-step-1">
+                    <div class="wz-section-head">
+                        <div class="wz-icon"><i class="ti ti-checklist" aria-hidden="true"></i></div>
+                        <div><div class="wz-section-title">Checklist</div><div class="wz-section-sub">Education and senior high school</div></div>
+                    </div>
+                    <div class="wz-grid">
+                        <p class="wz-grid-note text-muted">These fields are auto-filled from the appointment and cannot be edited.</p>
+                        <div class="wz-field span2"><label>Employee name</label><input type="text" class="wz-readonly" id="rx-cl-empname" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Position</label><input type="text" class="wz-readonly" id="rx-cl-pos" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Salary grade</label><input type="text" class="wz-readonly" id="rx-cl-sg" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Salary number</label><input type="text" class="wz-readonly" id="rx-cl-salnum" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Date of signing</label><input type="text" class="wz-readonly" id="rx-cl-dosign" readonly tabindex="-1"></div>
+                        <div class="wz-field span2"><label>Education (e.g. Bachelor of ...)</label><input type="text" name="education" id="f-education" placeholder="e.g. Bachelor of Secondary Education"></div>
+                        <div class="wz-field"><label>Senior high school?</label>
+                            <select name="senior_high_school" id="f-shs">
+                                <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="wz-field" id="strand-field" style="display:none"><label>Strand</label>
+                            <select name="senior_high_strand" id="f-strand">
+                                <option value="">Select strand</option><option value="STEM">STEM</option><option value="HUMMS">HUMMS</option><option value="ABM">ABM</option><option value="TVL">TVL</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- STEP 3: RAI --}}
                 <div class="step-panel" id="wz-step-2">
                     <div class="wz-section-head">
-                        <div class="wz-icon"><i class="ti ti-building" aria-hidden="true"></i></div>
-                        <div><div class="wz-section-title">Agency and administrative details</div><div class="wz-section-sub">Office, plantilla, and records information</div></div>
+                        <div class="wz-icon"><i class="ti ti-file-text" aria-hidden="true"></i></div>
+                        <div><div class="wz-section-title">RAI</div><div class="wz-section-sub">Report on Appointment Issued</div></div>
                     </div>
                     <div class="wz-grid">
-                        <div class="wz-field span2"><label>Office / Department / Unit</label><input type="text" name="department" id="f-dept" placeholder="e.g. DepEd – Division of Batangas"></div>
-                        <div class="wz-field"><label>School / District</label><input type="text" name="school_district" id="f-school" placeholder="e.g. Batangas NHS"></div>
-                        <div class="wz-field"><label>Sector</label><select name="sector" id="f-sector"><option value="">Select</option><option>Education</option><option>Health</option><option>Public Works</option><option>Agriculture</option><option>Social Welfare</option><option>Others</option></select></div>
-                        <div class="wz-field span2"><label>Name of agency</label><input type="text" name="agency_name" id="f-agency" placeholder="e.g. Department of Education"></div>
-                        <div class="wz-field"><label>Plantilla item number</label><input type="text" name="plantilla_item_number" id="f-plantilla-item" placeholder="e.g. OSEC-DECSB-T3-123456"></div>
-                        <div class="wz-field"><label>Plantilla page number</label><input type="text" name="plantilla_page_number" id="f-plantilla-page" placeholder="e.g. 12"></div>
-                        <div class="wz-field"><label>ODC number</label><input type="text" name="odc_number" id="f-odc"></div>
-                        <div class="wz-field"><label>Date received by records unit</label><input type="date" name="date_received_records" id="f-drec"></div>
-                        <div class="wz-field"><label>Date received by HR unit</label><input type="date" name="date_received_hr" id="f-dhr"></div>
-                        <div class="wz-field"><label>Previous incumbent</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name"></div>
-                        <div class="wz-field"><label>Incumbent</label><input type="text" name="incumbent" id="f-incumbent" placeholder="Full name"></div>
-                        <div class="wz-field"><label>Publication mode</label><select name="publication_mode" id="f-pubmode"><option value="">Select</option><option>CSC Bulletin</option><option>Agency Bulletin</option><option>Newspaper</option><option>Online</option><option>Not applicable</option></select></div>
+                        <p class="wz-grid-note text-muted">These fields are auto-filled from the appointment and cannot be edited.</p>
+                        <div class="wz-field span2"><label>Employee name</label><input type="text" class="wz-readonly" id="rx-rai-empname" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Position</label><input type="text" class="wz-readonly" id="rx-rai-pos" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Plantilla number</label><input type="text" class="wz-readonly" id="rx-rai-plantilla" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Salary grade</label><input type="text" class="wz-readonly" id="rx-rai-sg" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Salary number</label><input type="text" class="wz-readonly" id="rx-rai-salnum" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Employment status</label><input type="text" class="wz-readonly" id="rx-rai-estatus" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Appointment nature</label><input type="text" class="wz-readonly" id="rx-rai-nature" readonly tabindex="-1"></div>
                     </div>
                 </div>
 
-                {{-- STEP 4: Eligibility --}}
+                {{-- STEP 4: Final Deliberation --}}
                 <div class="step-panel" id="wz-step-3">
                     <div class="wz-section-head">
-                        <div class="wz-icon"><i class="ti ti-certificate" aria-hidden="true"></i></div>
-                        <div><div class="wz-section-title">Eligibility and appointment history</div><div class="wz-section-sub">Civil service eligibility and key dates</div></div>
+                        <div class="wz-icon"><i class="ti ti-gavel" aria-hidden="true"></i></div>
+                        <div><div class="wz-section-title">Final Deliberation</div><div class="wz-section-sub">Non-teaching determination</div></div>
                     </div>
                     <div class="wz-grid">
-                        <div class="wz-field span2"><label>Type of eligibility used</label><input type="text" name="eligibility_type" id="f-elig" placeholder="e.g. Professional Teacher – Elementary"></div>
-                        <div class="wz-field"><label>Date of validity of eligibility</label><input type="date" name="eligibility_validity" id="f-eligvalid"></div>
-                        <div class="wz-field"><label>First time used of eligibility?</label><select name="eligibility_first_used" id="f-eligfirst"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
-                        <div class="wz-field"><label>Date of original appointment</label><input type="date" name="date_original_appointment" id="f-doa"></div>
-                        <div class="wz-field"><label>Date of last promotion</label><input type="date" name="date_last_promotion" id="f-dlp"></div>
+                        <p class="wz-grid-note text-muted">These fields are auto-filled from the appointment and cannot be edited.</p>
+                        <div class="wz-field span2"><label>Employee name</label><input type="text" class="wz-readonly" id="rx-fd-empname" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Position</label><input type="text" class="wz-readonly" id="rx-fd-pos" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Date of signing</label><input type="text" class="wz-readonly" id="rx-fd-dosign" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>School</label><input type="text" class="wz-readonly" id="rx-fd-school" readonly tabindex="-1"></div>
+                        <div class="wz-field"><label>Non teaching?</label>
+                            <select name="non_teaching" id="f-nonteaching">
+                                <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="wz-field" id="fd-result-field" style="display:none">
+                            <label>Result</label>
+                            <div id="fd-result" style="padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-weight:600;background:var(--accent-light);color:var(--text-primary)"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -155,11 +173,12 @@ function openWizard() {
     document.getElementById('wizard-modal-title').textContent = 'Add new appointment';
     wzCurrent = 0;
     wzUpdateUI();
+    syncChecklist();
+    syncFinalDeliberation();
+    syncReadonly();
     document.getElementById('overlay-wizard').classList.add('show');
 }
 
-// The edit load logic is defined in the page script so it can fetch the full appointment payload
-// and populate the wizard fields before showing the modal.
 function wg(id) {
     const el = document.getElementById(id);
     if (!el) return '—';
@@ -167,32 +186,70 @@ function wg(id) {
     return el.value.trim() || '—';
 }
 
+function rxv(id) {
+    const el = document.getElementById(id);
+    if (!el) return '—';
+    return el.value.trim() || '—';
+}
+
+function wzEmployeeName() {
+    const name = (wg('f-first') + ' ' + wg('f-middle') + ' ' + wg('f-last') + ' ' + wg('f-ext'))
+        .replace(/\s+/g, ' ').trim();
+    return name || '—';
+}
+
+function syncReadonly() {
+    const name = wzEmployeeName();
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = (val && val !== '—') ? val : '';
+    };
+    set('rx-cl-empname', name);  set('rx-cl-pos', wg('f-pos'));
+    set('rx-cl-sg', wg('f-sg'));  set('rx-cl-salnum', wg('f-salnums'));
+    set('rx-cl-dosign', wg('f-dosign'));
+
+    set('rx-rai-empname', name);  set('rx-rai-pos', wg('f-pos'));
+    set('rx-rai-plantilla', wg('f-plantilla-item'));  set('rx-rai-sg', wg('f-sg'));
+    set('rx-rai-salnum', wg('f-salnums'));  set('rx-rai-estatus', wg('f-estatus'));
+    set('rx-rai-nature', wg('f-nature'));
+
+    set('rx-fd-empname', name);  set('rx-fd-pos', wg('f-pos'));
+    set('rx-fd-dosign', wg('f-dosign'));  set('rx-fd-school', wg('f-school-new'));
+}
+
+function fdResult() {
+    const v = document.getElementById('f-nonteaching')?.value;
+    return v === 'Yes' ? 'Tommy' : (v === 'No' ? 'Ruben' : '—');
+}
+
 function wzBuildReview() {
     const sections = [
-        { title: 'Personal information', rows: [
-            ['Last name', wg('f-last')], ['First name', wg('f-first')], ['Middle name', wg('f-middle')],
-            ['Extension', wg('f-ext')], ['Sex', wg('f-sex')], ['Date of birth', wg('f-dob')],
-            ['TIN', wg('f-tin')], ['PWD?', wg('f-pwd')], ['IP group?', wg('f-ip')], ['Ethnicity', wg('f-ethnicity')]
+        { title: 'Appointment', rows: [
+            ['Employee name', (wg('f-first') + ' ' + wg('f-middle') + ' ' + wg('f-last') + ' ' + wg('f-ext')).replace(/\s+/g, ' ').trim()],
+            ['Position', wg('f-pos')], ['Salary grade', wg('f-sg')],
+            ['Employment status', wg('f-estatus')], ['District', wg('f-school')], ['School', wg('f-school-new')],
+            ['Salary in words', wg('f-salwords')], ['Salary in numbers', wg('f-salnums')],
+            ['Appointment nature', wg('f-nature')], ['Vice', wg('f-prev')],
+            ['Natural vacancy', wg('f-natural')], ['Plantilla number', wg('f-plantilla-item')],
+            ['Page number', wg('f-plantilla-page')], ['Date of appointment', wg('f-doa')],
+            ['Date of signing', wg('f-dosign')], ['Date of validity', wg('f-eligvalid')]
         ]},
-        { title: 'Position and salary', rows: [
-            ['Position title', wg('f-pos')], ['Position from–to', wg('f-pfrom') + ' → ' + wg('f-pto')],
-            ['Pay grade / step', wg('f-sg') + ' / ' + wg('f-step')], ['Monthly salary', wg('f-sal')],
-            ['Employee status', wg('f-estatus')], ['Compensation (words)', wg('f-salwords')],
-            ['Nature of appointment', wg('f-nature')], ['Reason', wg('f-reason')],
-            ['Position level', wg('f-poslevel')], ['Appointment status', wg('f-aptstatus')]
+        { title: 'Checklist', rows: [
+            ['Employee name', rxv('rx-cl-empname')], ['Position', rxv('rx-cl-pos')],
+            ['Salary grade', rxv('rx-cl-sg')], ['Salary number', rxv('rx-cl-salnum')],
+            ['Date of signing', rxv('rx-cl-dosign')],
+            ['Education', wg('f-education')], ['Senior high school?', wg('f-shs')], ['Strand', wg('f-strand')]
         ]},
-        { title: 'Agency and administrative', rows: [
-            ['Office / Dept / Unit', wg('f-dept')], ['School / District', wg('f-school')],
-            ['Sector', wg('f-sector')], ['Agency', wg('f-agency')],
-            ['Plantilla item', wg('f-plantilla-item')], ['Plantilla page', wg('f-plantilla-page')],
-            ['ODC number', wg('f-odc')], ['Date received (records)', wg('f-drec')],
-            ['Date received (HR)', wg('f-dhr')], ['Previous incumbent', wg('f-prev')],
-            ['Incumbent', wg('f-incumbent')], ['Publication mode', wg('f-pubmode')]
+        { title: 'RAI', rows: [
+            ['Employee name', rxv('rx-rai-empname')], ['Position', rxv('rx-rai-pos')],
+            ['Plantilla number', rxv('rx-rai-plantilla')], ['Salary grade', rxv('rx-rai-sg')],
+            ['Salary number', rxv('rx-rai-salnum')], ['Employment status', rxv('rx-rai-estatus')],
+            ['Appointment nature', rxv('rx-rai-nature')]
         ]},
-        { title: 'Eligibility and history', rows: [
-            ['Type of eligibility', wg('f-elig')], ['Validity', wg('f-eligvalid')],
-            ['First time used?', wg('f-eligfirst')], ['Date of original appointment', wg('f-doa')],
-            ['Date of last promotion', wg('f-dlp')]
+        { title: 'Final Deliberation', rows: [
+            ['Employee name', rxv('rx-fd-empname')], ['Position', rxv('rx-fd-pos')],
+            ['Date of signing', rxv('rx-fd-dosign')], ['School', rxv('rx-fd-school')],
+            ['Non teaching?', wg('f-nonteaching')], ['Result', fdResult()]
         ]}
     ];
     document.getElementById('wz-review-content').innerHTML = sections.map(s => `
@@ -207,8 +264,8 @@ function wzGoNext() {
         alert('Please fill in the required fields (Last name, First name) before continuing.');
         return;
     }
-    if (wzCurrent === 1 && (!document.getElementById('f-pos').value || !document.getElementById('f-estatus').value || !document.getElementById('f-nature').value)) {
-        alert('Please fill in the required fields (Position title, Employee status, Nature of appointment) before continuing.');
+    if (wzCurrent === 0 && (!document.getElementById('f-pos').value || !document.getElementById('f-estatus').value || !document.getElementById('f-nature').value)) {
+        alert('Please fill in the required fields (Position, Employment status, Appointment nature) before continuing.');
         return;
     }
     if (wzCurrent === WZ_TOTAL - 1) wzBuildReview();
@@ -248,6 +305,22 @@ function wzUpdateUI() {
     }
 }
 
+function syncChecklist() {
+    const shs = document.getElementById('f-shs');
+    const strand = document.getElementById('strand-field');
+    if (shs && strand) strand.style.display = shs.value === 'Yes' ? 'block' : 'none';
+}
+function syncFinalDeliberation() {
+    const nt = document.getElementById('f-nonteaching');
+    const field = document.getElementById('fd-result-field');
+    const result = document.getElementById('fd-result');
+    if (nt && field && result) {
+        const show = nt.value === 'Yes' || nt.value === 'No';
+        field.style.display = show ? 'block' : 'none';
+        result.textContent = fdResult();
+    }
+}
+
 // Re-open the wizard automatically if validation failed server-side
 @if ($errors->any())
     document.addEventListener('DOMContentLoaded', () => {
@@ -256,4 +329,10 @@ function wzUpdateUI() {
         document.getElementById('overlay-wizard').classList.add('show');
     });
 @endif
+
+const wzForm = document.getElementById('wizard-form');
+if (wzForm) {
+    wzForm.addEventListener('input', syncReadonly);
+    wzForm.addEventListener('change', syncReadonly);
+}
 </script>

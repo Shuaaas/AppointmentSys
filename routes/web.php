@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,9 +23,6 @@ Route::redirect('/', '/login');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);
-
-    Route::get('/register', [RegisterController::class, 'create'])->name('register');
-    Route::post('/register', [RegisterController::class, 'store']);
 });
 
 // --- AUTHENTICATED ---
@@ -35,7 +32,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard access for HR, manager, and admin.
     // Admin sees the new admin dashboard; HR still sees the traditional overview.
-    Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':hr,manager,admin'])->group(function () {
+    Route::middleware([EnsureUserHasRole::class.':hr,manager,admin'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     });
 
@@ -44,13 +41,15 @@ Route::middleware('auth')->group(function () {
         // View access: HR, Records, Manager — all current non-admin roles.
         // Manager gets read-only because AppointmentPolicy::before() denies
         // every write ability for that role, not because it's excluded here.
-        Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':hr,records,manager'])->group(function () {
+        Route::middleware([EnsureUserHasRole::class.':hr,records,manager'])->group(function () {
             Route::get('/', [AppointmentController::class, 'index'])->name('index');
-            Route::get('/{appointment}', [AppointmentController::class, 'show'])->name('show');
+            Route::get('/archive', [AppointmentController::class, 'archive'])->name('archive');
+            Route::get('/{appointment}', [AppointmentController::class, 'show'])->whereNumber('appointment')->name('show');
         });
 
         // HR only: create, full update, archive/conclude, document generation.
-        Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':hr'])->group(function () {
+        Route::middleware([EnsureUserHasRole::class.':hr'])->group(function () {
+            Route::get('/create', [AppointmentController::class, 'create'])->name('create');
             Route::post('/', [AppointmentController::class, 'store'])->name('store');
             Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
             Route::post('/{appointment}/conclude', [AppointmentController::class, 'conclude'])->name('conclude');
@@ -63,12 +62,12 @@ Route::middleware('auth')->group(function () {
         });
 
         // Records only: the single narrow field edit.
-        Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':records'])->group(function () {
+        Route::middleware([EnsureUserHasRole::class.':records'])->group(function () {
             Route::patch('/{appointment}/transaction-number', [AppointmentController::class, 'updateTransactionNumber'])
                 ->name('updateTransactionNumber');
         });
 
-        Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':admin'])->group(function () {
+        Route::middleware([EnsureUserHasRole::class.':admin'])->group(function () {
             Route::delete('/{appointment}', [AppointmentController::class, 'destroy'])
                 ->name('destroy');
             Route::get('/trash', [AppointmentController::class, 'trash'])
@@ -86,18 +85,23 @@ Route::middleware('auth')->group(function () {
     });
 
     // History: viewable by all 4 roles (matches your earlier RBAC matrix).
-    Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':hr,records,manager,admin'])->group(function () {
+    Route::middleware([EnsureUserHasRole::class.':hr,records,manager,admin'])->group(function () {
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
     });
 
     // Admin only: user & role management, including approving registration requests.
-    Route::middleware([\App\Http\Middleware\EnsureUserHasRole::class . ':admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware([EnsureUserHasRole::class.':admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users/create', [UserController::class, 'addUser'])->name('users.add');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::patch('/users/{user}/role', [UserController::class, 'assignRole'])->name('users.assignRole');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::patch('/users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+
+        Route::get('/passwords', [UserController::class, 'passwords'])->name('passwords.index');
+        Route::post('/passwords/{user}', [UserController::class, 'resetPassword'])->name('passwords.reset');
     });
 });

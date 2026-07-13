@@ -33,7 +33,12 @@ class AppointmentController extends Controller
         $selectedNature = $request->query('nature');
         $selectedTab = $request->query('tab', 'needs');
 
+        // Completed records move to the Archive page, so HR and Manager no
+        // longer see them in Appointment Data — only active/in-progress remain.
         $visibleStates = ['new', 'active', 'in_progress', 'completed'];
+        if ($request->user()->isHr() || $request->user()->isManager()) {
+            $visibleStates = ['new', 'active', 'in_progress'];
+        }
 
         $appointmentsQuery = Appointment::whereIn('record_state', $visibleStates)
             ->when($selectedStatus, function ($q, $selectedStatus) {
@@ -50,10 +55,12 @@ class AppointmentController extends Controller
             ->search($request->query('q'));
 
         if ($request->user()->isRecords()) {
-            $appointmentsQuery = $appointmentsQuery->when($selectedTab === 'needs', fn ($q) => $q->where(function ($query) {
-                    $query->whereNull('transaction_number')->orWhere('transaction_number', '');
-                }))
-                ->when($selectedTab === 'completed', fn ($q) => $q->whereNotNull('transaction_number')->where('transaction_number', '<>', ''));
+            $appointmentsQuery = $appointmentsQuery->when($selectedTab === 'needs', fn ($q) => $q->where('record_state', 'in_progress')
+                    ->where(function ($query) {
+                        $query->whereNull('transaction_number')->orWhere('transaction_number', '');
+                    }))
+                ->when($selectedTab === 'completed', fn ($q) => $q->where('record_state', 'completed')
+                    ->whereNotNull('transaction_number')->where('transaction_number', '<>', ''));
         }
 
         $appointments = $appointmentsQuery->orderByDesc('encoded_at')->get();
@@ -93,6 +100,17 @@ class AppointmentController extends Controller
             'completedTodayCount'=> $completedTodayCount,
             'monthlyTotalCount'  => $monthlyTotalCount,
         ]);
+    }
+
+    /**
+     * Show the create appointment page.
+     * HR only.
+     */
+    public function create(): View
+    {
+        $this->authorize('create', Appointment::class);
+
+        return view('appointments.create');
     }
 
     /**
@@ -180,11 +198,15 @@ class AppointmentController extends Controller
             'transaction_number' => ['required', 'string', 'max:255'],
         ]);
 
-        $appointment->update($request->only('transaction_number'));
+        $appointment->update([
+            'transaction_number' => $request->transaction_number,
+            'record_state' => 'completed',
+        ]);
 
         return redirect()
             ->route('appointments.index')
-            ->with('success', "Transaction number updated for {$appointment->full_name}.");
+            ->with('tn_saved', $request->transaction_number)
+            ->with('tn_name', $appointment->full_name);
     }
 
     /**
@@ -226,6 +248,21 @@ class AppointmentController extends Controller
         return redirect()
             ->route('appointments.index')
             ->with('success', "Appointment for {$appointment->full_name} was moved to History.");
+    }
+
+    /**
+     * Archive — lists records that have reached the "Completed" status.
+     * Policy: viewable by HR, Records, and Manager (route middleware gates access).
+     */
+    public function archive(): View
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $appointments = Appointment::where('record_state', 'completed')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('appointments.archive', compact('appointments'));
     }
 
     /**

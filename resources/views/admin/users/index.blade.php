@@ -30,7 +30,7 @@
                             <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                                 <span style="display:inline-block; min-width:70px;">{{ $user->is_active ? 'Active' : 'Inactive' }}</span>
 
-                                @if ($user->is_active)
+                                @if ($user->is_active && $user->id !== auth()->id())
                                     <form method="POST" action="{{ route('admin.users.deactivate', $user) }}" class="deactivate-user-form" style="display:inline-block; margin-left:8px;" data-user-name="{{ $user->name }}" data-action="deactivate">
                                         @csrf
                                         @method('PATCH')

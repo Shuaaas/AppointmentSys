@@ -227,6 +227,8 @@ class AppointmentFormService
             'salary' => $this->pesoAmount($appointment->monthly_salary ?? $appointment->compensation_numbers),
             'employment_status' => $appointment->employee_status,
             'appointment_nature' => $appointment->nature_of_appointment,
+            'natural_vacancy' => $this->upper($appointment->natural_vacancy),
+            'date_of_appointment' => $this->date($appointment->date_original_appointment),
 
         ];
     }
@@ -238,6 +240,8 @@ class AppointmentFormService
             'school' => $this->properCase($appointment->agency_name ?? $appointment->school_district),
             'employee_name' => $this->upper($this->employeeName($appointment)),
             'date_signed' => $this->date($appointment->date_received_hr ?? now()),
+            'natural_vacancy' => $this->upper($appointment->natural_vacancy),
+            'date_of_appointment' => $this->date($appointment->date_original_appointment),
         ];
     }
 
@@ -251,6 +255,8 @@ class AppointmentFormService
             'employee_name' => $this->upper($this->employeeName($appointment)),
             'position' => $this->upper($appointment->position_title),
             'salary' => $this->pesoAmount($appointment->monthly_salary ?? $appointment->compensation_numbers),
+            'natural_vacancy' => $this->upper($appointment->natural_vacancy),
+            'date_of_appointment' => $this->date($appointment->date_original_appointment),
         ];
     }
 
@@ -401,7 +407,9 @@ class AppointmentFormService
             'division' => $appointment->sector,
             'plantilla_number' => $appointment->plantilla_item_number,
             'date_signed' => $this->date($appointment->date_received_hr ?? now()),
-            'effectivity_date' => $this->date($appointment->position_from),
+            'effectivity_date' => $this->date($appointment->eligibility_validity),
+            'natural_vacancy' => $this->upper($appointment->natural_vacancy),
+            'date_of_appointment' => $this->date($appointment->date_original_appointment),
             'vice' => $appointment->previous_incumbent,
             'appointing_officer' => $appointment->incumbent,
             'hrmo' => $appointment->encoding_personnel ?: auth()->user()?->name,

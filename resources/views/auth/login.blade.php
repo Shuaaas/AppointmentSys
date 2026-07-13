@@ -1,125 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Log in — PAMS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#1c2733; --ink-dim:#5b6d7c; --ink-faint:#8fa0ac;
-    --line:#e6ebef; --bg:#f6f8f9; --card:#ffffff;
-    --accent:#1b7fbf; --accent-deep:#0f5e91; --accent-soft:#eaf4fb;
-    --red:#c0392b; --red-soft:#fbe9e7;
-    --green:#1b8a4a; --green-soft:#e6f6ec;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink);
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
-    -webkit-font-smoothing:antialiased;
-  }
-  .card{
-    width:100%; max-width:400px; background:var(--card); border:1px solid var(--line);
-    border-radius:16px; padding:36px 32px; box-shadow:0 10px 30px rgba(20,40,60,.06);
-  }
-  .brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:22px; }
-  .brand .mark{
-    width:36px; height:36px; border-radius:10px; background:linear-gradient(145deg,var(--accent),var(--accent-deep));
-    display:flex; align-items:center; justify-content:center;
-  }
-  .brand .name{ font-family:'Manrope',sans-serif; font-weight:800; font-size:17px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in &mdash; HR Recruitment System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --blue:       #003087;
+            --blue-mid:   #0047b3;
+            --blue-light: #e6ecf7;
+            --blue-dark:  #0a1a33;
+            --gold:       #ffd700;
+            --red:        #CE1126;
+            --text:       #1a2840;
+            --muted:      #5a6880;
+            --header-h:   64px;
+        }
 
-  h1{ font-family:'Manrope',sans-serif; font-size:19px; font-weight:800; text-align:center; margin:0 0 4px; }
-  .sub{ text-align:center; color:var(--ink-dim); font-size:13px; margin-bottom:26px; }
+        /* ── Base ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: var(--text);
+        }
 
-  .alert{ padding:11px 14px; border-radius:9px; font-size:12.8px; margin-bottom:18px; line-height:1.5; }
-  .alert-success{ background:var(--green-soft); color:var(--green); }
-  .alert-error{ background:var(--red-soft); color:var(--red); }
+        /* ── Fixed background ── */
+        body {
+            background: url('{{ asset('matatag-bg.png') }}') center center / cover no-repeat fixed;
+            position: relative;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 48, 135, 0.72);
+            z-index: 0;
+            pointer-events: none;
+        }
 
-  label{ display:block; font-size:12.6px; font-weight:650; color:var(--ink-dim); margin-bottom:6px; }
-  .field{ margin-bottom:16px; }
-  input[type=email], input[type=password]{
-    width:100%; padding:11px 13px; border:1.5px solid var(--line); border-radius:9px;
-    font-size:14px; font-family:'Inter',sans-serif; color:var(--ink); transition:border-color .15s;
-  }
-  input:focus{ outline:none; border-color:var(--accent); }
-  .field-error{ color:var(--red); font-size:12px; margin-top:5px; }
+        /* ── Watermark seal ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%; left: 50%;
+            width: 560px; height: 560px;
+            background: url('{{ asset('deped_logo.png') }}') center / contain no-repeat;
+            transform: translate(-50%, -50%);
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-  .row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; font-size:12.6px; }
-  .checkbox-label{ display:flex; align-items:center; gap:7px; color:var(--ink-dim); cursor:pointer; }
+        /* ── Nav / Header ── */
+        .auth-header {
+            height: var(--header-h);
+            background: rgba(0, 48, 135, 0.96);
+            border-bottom: none;
+            color: #fff;
+            padding: 0 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 2px 16px rgba(0,0,0,.25);
+            backdrop-filter: blur(8px);
+        }
+        .auth-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .auth-header-logo {
+            height: 44px;
+            width: auto;
+            display: block;
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,.3));
+        }
+        .auth-header-text .org {
+            font-size: .67rem;
+            font-weight: 700;
+            color: rgba(255,255,255,.7);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+        .auth-header-text .sys {
+            font-size: .9rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.15;
+        }
+        .auth-header-datetime {
+            color: rgba(255,255,255,.65);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        @media(max-width:560px){ .auth-header-datetime { display: none; } }
+        .auth-header-spacer { width: 0; }
+        @media(min-width:680px){ .auth-header-spacer { width: 180px; } }
 
-  .btn-primary{
-    width:100%; background:var(--accent); color:#fff; border:none; border-radius:9px;
-    padding:12px; font-size:14.5px; font-weight:650; cursor:pointer; transition:background .15s;
-  }
-  .btn-primary:hover{ background:var(--accent-deep); }
+        /* ── Centered wrapper ── */
+        .auth-wrapper {
+            min-height: calc(100vh - var(--header-h));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1rem;
+            position: relative;
+            z-index: 1;
+        }
 
-  .footer-link{ text-align:center; margin-top:22px; font-size:13px; color:var(--ink-dim); }
-  .footer-link a{ color:var(--accent); font-weight:600; text-decoration:none; }
-  .footer-link a:hover{ text-decoration:underline; }
+        /* ── Card ── */
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 12px 48px rgba(0,0,0,.3);
+            overflow: hidden;
+        }
+        .auth-card .card-body {
+            padding: 0 !important;
+        }
 
-  .note{ text-align:center; font-size:11.5px; color:var(--ink-faint); margin-top:18px; line-height:1.6; }
-</style>
+        /* Card header banner */
+        .auth-card-header {
+            background: linear-gradient(120deg, var(--blue) 0%, var(--blue-dark) 100%);
+            border-bottom: 3px solid var(--gold);
+            padding: 24px 28px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-card-header::after {
+            content: '';
+            position: absolute;
+            right: -30px; top: -30px;
+            width: 140px; height: 140px;
+            background: url('{{ asset('logo_DepED.png') }}') center / contain no-repeat;
+            opacity: 0.10;
+            pointer-events: none;
+        }
+        .auth-card-header-logo {
+            height: 50px; width: 50px;
+            background: #fff;
+            border-radius: 50%;
+            padding: 3px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+            flex-shrink: 0;
+            position: relative; z-index: 1;
+        }
+        .auth-card-header-text {
+            position: relative; z-index: 1;
+        }
+        .auth-card-header-text .eyebrow {
+            font-size: .68rem; font-weight: 700;
+            letter-spacing: .12em; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 3px;
+        }
+        .auth-card-header-text .title {
+            font-size: 1.05rem; font-weight: 800;
+            color: #fff; line-height: 1.2;
+        }
+
+        /* Card body padding */
+        .auth-card-body {
+            padding: 28px 28px 24px;
+            background: #fff;
+        }
+
+        /* ── Form elements ── */
+        .form-label { font-size: .82rem; font-weight: 600; color: var(--text); }
+        .form-control {
+            border-color: #c5d0e6;
+            font-size: .92rem;
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        .form-control:focus {
+            border-color: var(--blue-mid);
+            box-shadow: 0 0 0 3px rgba(0,71,179,.12);
+        }
+
+        /* ── Primary button ── */
+        .btn-hr-primary {
+            background: var(--blue);
+            color: #fff;
+            font-weight: 700;
+            font-size: .92rem;
+            padding: 11px;
+            border-radius: 8px;
+            border: none;
+            transition: background .2s;
+        }
+        .btn-hr-primary:hover {
+            background: var(--blue-dark);
+            color: #fff;
+        }
+
+        /* ── Card footer ── */
+        .auth-card-footer {
+            background: var(--blue-light);
+            border-top: 1px solid #dce5f5;
+            padding: 14px 28px;
+            font-size: .78rem;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+    @stack('styles')
 </head>
 <body>
-
-<div class="card">
-  <div class="brand">
-    <div class="mark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M14 20c0-2.2 1.8-4 4-4"/></svg>
+    <div class="auth-header">
+        <a href="/" class="auth-header-brand">
+            <img src="{{ asset('deped_logo.png') }}" alt="DepEd" class="auth-header-logo">
+            <div class="auth-header-text">
+                <div class="org">Schools Division Office of Cavite Province</div>
+                <div class="sys">Appointment System</div>
+            </div>
+        </a>
+        <span class="auth-header-datetime" id="authHeaderDateTime"></span>
+        <span class="auth-header-spacer"></span>
     </div>
-    <div class="name">PAMS</div>
-  </div>
+    <div class="auth-wrapper">
+        <div class="card auth-card">
+            <div class="card-body">
+                <div class="auth-card-header">
+                    <img src="{{ asset('deped_logo.png') }}" alt="DepEd" class="auth-card-header-logo">
+                    <div class="auth-card-header-text">
+                        <div class="eyebrow">Department of Education</div>
+                        <div class="title">Schools Division Office<br>of Cavite Province</div>
+                    </div>
+                </div>
+                <div class="auth-card-body">
+                    @if (session('status'))
+                        <div class="alert alert-success py-2">{{ session('status') }}</div>
+                    @endif
 
-  <h1>Log in to your account</h1>
-  <div class="sub">Personnel Appointment Management System</div>
+                    @if ($errors->any())
+                        <div class="alert alert-danger py-2">
+                            @foreach ($errors->all() as $error)
+                                {{ $error }}@if(!$loop->last)<br>@endif
+                            @endforeach
+                        </div>
+                    @endif
 
-  @if (session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
-  @endif
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
 
-  @if ($errors->any())
-    <div class="alert alert-error">
-      @foreach ($errors->all() as $error)
-        {{ $error }}@if(!$loop->last)<br>@endif
-      @endforeach
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
+                            @error('email') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+                            @error('password') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" name="remember" id="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+
+                        <button type="submit" class="btn-hr-primary w-100">Sign In</button>
+                    </form>
+
+                </div>
+                <div class="auth-card-footer">
+                    &copy; {{ date('Y') }} DepEd &mdash; Schools Division Office of Cavite Province
+                </div>
+            </div>
+        </div>
     </div>
-  @endif
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            const el = document.getElementById('authHeaderDateTime');
+            if (!el) return;
 
-  <form method="POST" action="{{ route('login') }}">
-    @csrf
+            function update() {
+                const now = new Date();
+                const datePart = now.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
+                const timePart = now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                });
+                el.textContent = datePart + ' at ' + timePart;
+            }
 
-    <div class="field">
-      <label for="email">Email address</label>
-      <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username">
-      @error('email') <div class="field-error">{{ $message }}</div> @enderror
-    </div>
-
-    <div class="field">
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" required autocomplete="current-password">
-      @error('password') <div class="field-error">{{ $message }}</div> @enderror
-    </div>
-
-    <div class="row-between">
-      <label class="checkbox-label">
-        <input type="checkbox" name="remember"> Remember me
-      </label>
-    </div>
-
-    <button type="submit" class="btn-primary">Log in</button>
-  </form>
-
-  <div class="footer-link">
-    Don't have an account? <a href="{{ route('register') }}">Request access</a>
-  </div>
-
-  <div class="note">
-    Role is assigned by your Admin and applied automatically after login —
-    there is no role selector here.
-  </div>
-</div>
-
+            update();
+            setInterval(update, 1000);
+        })();
+    </script>
+    @stack('scripts')
 </body>
 </html>

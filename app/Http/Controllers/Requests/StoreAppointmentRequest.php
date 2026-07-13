@@ -44,6 +44,7 @@ class StoreAppointmentRequest extends FormRequest
             // Agency and administrative
             'department'                 => ['nullable', 'string', 'max:255'],
             'school_district'            => ['nullable', 'string', 'max:150'],
+            'school'                     => ['nullable', 'string', 'max:150'],
             'sector'                     => ['nullable', 'string', 'max:100'],
             'agency_name'                => ['nullable', 'string', 'max:255'],
             'plantilla_item_number'      => ['nullable', 'string', 'max:100'],
@@ -54,6 +55,7 @@ class StoreAppointmentRequest extends FormRequest
             'previous_incumbent'         => ['nullable', 'string', 'max:150'],
             'incumbent'                  => ['nullable', 'string', 'max:150'],
             'publication_mode'           => ['nullable', 'in:CSC Bulletin,Agency Bulletin,Newspaper,Online,Not applicable'],
+            'natural_vacancy'            => ['nullable', 'string', 'max:150'],
 
             // Eligibility and history
             'eligibility_type'           => ['nullable', 'string', 'max:150'],
