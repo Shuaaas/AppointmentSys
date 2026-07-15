@@ -44,9 +44,11 @@
             <option value="">All natures</option>
             <option value="Original" {{ $selectedNature === 'Original' ? 'selected' : '' }}>Original</option>
             <option value="Promotion" {{ $selectedNature === 'Promotion' ? 'selected' : '' }}>Promotion</option>
+            <option value="Demotion" {{ $selectedNature === 'Demotion' ? 'selected' : '' }}>Demotion</option>
             <option value="Transfer" {{ $selectedNature === 'Transfer' ? 'selected' : '' }}>Transfer</option>
-            <option value="Reappointment" {{ $selectedNature === 'Reappointment' ? 'selected' : '' }}>Reappointment</option>
-            <option value="Reinstatement" {{ $selectedNature === 'Reinstatement' ? 'selected' : '' }}>Reinstatement</option>
+            <option value="Re-Classification" {{ $selectedNature === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option>
+            <option value="Re-Employment" {{ $selectedNature === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option>
+            <option value="Re-Appointment" {{ $selectedNature === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
         </select>
         <input type="hidden" name="date" value="{{ $selectedDate }}">
         <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
@@ -117,10 +119,12 @@
                     @forelse ($appointments as $i => $a)
                         <tr class="data-row">
                             <td>{{ $i + 1 }}</td>
-                            <td>
-                                <div class="name-text">{{ $a->full_name }}</div>
-                                <div class="small-text">{{ $a->position_title }}</div>
-                            </td>
+                        <td>
+                            <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
+                                <span class="name-text">{{ $a->full_name }}</span>
+                                @unless(auth()->user()?->isHr())<div class="tn-code">{{ $a->transaction_number }}</div>@endunless
+                            </div>
+                        </td>
                             <td>{{ $a->plantilla_item_number ?: '—' }}</td>
                             <td>{{ $a->school_district ?: '—' }}</td>
                             <td><span class="badge badge-teal">{{ $a->nature_of_appointment ?: '—' }}</span></td>
@@ -187,7 +191,8 @@
                         </div>
                     </th>
                     <th>Original appt.</th>
-                    <th>Eligibility</th><th>Date encoded</th>
+                    @unless(auth()->user()?->isManager())<th>Open</th>@else<th>Eligibility</th>@endunless
+                    <th>Date encoded</th>
                 </tr>
             </thead>
             <tbody>
@@ -198,11 +203,6 @@
                         <td>
                             <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
                                 <span class="name-text">{{ $a->full_name }}</span>
-                                @unless(auth()->user()?->isManager())
-                                    <button type="button" class="name-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Toggle details">
-                                        <i class="ti ti-chevron-down" aria-hidden="true"></i>
-                                    </button>
-                                @endunless
                             </div>
                             @unless(auth()->user()?->isHr())<div class="tn-code">{{ $a->transaction_number }}</div>@endunless
                         </td>
@@ -222,7 +222,11 @@
                             <span class="badge {{ $statusClass }}" id="status-badge-{{ $a->id }}">{{ $a->display_record_state }}</span>
                         </td>
                         <td>{{ optional($a->date_original_appointment)->format('Y-m-d') ?? '—' }}</td>
-                        <td><span class="badge badge-teal">{{ $a->eligibility_type ?? '—' }}</span></td>
+                        @unless(auth()->user()?->isManager())
+                            <td><button type="button" class="btn btn-secondary btn-sm open-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Expand details"><i class="ti ti-chevron-down" aria-hidden="true"></i> Expand</button></td>
+                        @else
+                            <td><span class="badge badge-teal">{{ $a->eligibility_type ?? '—' }}</span></td>
+                        @endunless
                         <td style="font-size:12px;color:var(--text-muted)">{{ $a->encoded_at->format('F j, Y g:i A') }}</td>
                     </tr>
                     @unless(auth()->user()?->isManager())
@@ -292,11 +296,11 @@
 function toggleRow(id, e) {
     e.stopPropagation();
     const row = document.getElementById('detail-' + id);
-    const btn = document.querySelector('#row-' + id + ' .name-btn');
+    const btn = document.querySelector('#row-' + id + ' .open-btn');
     const isOpen = row.classList.contains('open');
 
     document.querySelectorAll('.dropdown-row.open').forEach(r => r.classList.remove('open'));
-    document.querySelectorAll('.name-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
+    document.querySelectorAll('.open-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
 
     if (!isOpen) {
         row.classList.add('open');
@@ -306,9 +310,9 @@ function toggleRow(id, e) {
 }
 
 document.addEventListener('click', function (e) {
-    if (!e.target.closest('.name-btn') && !e.target.closest('.dropdown-row')) {
+    if (!e.target.closest('.open-btn') && !e.target.closest('.dropdown-row')) {
         document.querySelectorAll('.dropdown-row.open').forEach(r => r.classList.remove('open'));
-        document.querySelectorAll('.name-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
+        document.querySelectorAll('.open-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
     }
 });
 
@@ -352,7 +356,12 @@ function populateWizardForm(data) {
     const setValue = (id, value) => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.value = value ?? '';
+        if (el.type === 'date') {
+            const m = String(value ?? '').match(/^(\d{4}-\d{2}-\d{2})/);
+            el.value = m ? m[1] : '';
+        } else {
+            el.value = value ?? '';
+        }
     };
 
     setValue('f-last', data.last_name);
@@ -382,6 +391,7 @@ function populateWizardForm(data) {
 
     setValue('f-dept', data.department);
     setValue('f-school', data.school_district);
+    setValue('f-school-new', data.school);
     setValue('f-sector', data.sector);
     setValue('f-agency', data.agency_name);
     setValue('f-plantilla-item', data.plantilla_item_number);
@@ -429,84 +439,120 @@ function openViewSummary(id) {
         })
         .then(data => {
             content.innerHTML = buildAppointmentSummary(data);
+            initViewTabs();
         })
         .catch(() => {
             content.innerHTML = '<p class="text-danger">Unable to load summary. Please try again.</p>';
         });
 }
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char]));
+}
+
+function initViewTabs() {
+    const triggers = document.querySelectorAll('.view-tab-trigger');
+    if (!triggers.length) return;
+
+    triggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+            const target = trigger.dataset.tab;
+            document.querySelectorAll('.view-tab-trigger').forEach((btn) => {
+                const isActive = btn === trigger;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            document.querySelectorAll('.view-tab-panel').forEach((panel) => {
+                const isActive = panel.dataset.tab === target;
+                panel.classList.toggle('active', isActive);
+                panel.hidden = !isActive;
+            });
+        });
+    });
+}
+
 function buildAppointmentSummary(data) {
-    const sections = [
-        {
-            title: 'Personal information',
-            rows: [
-                ['Full name', `${data.last_name}, ${data.first_name}${data.middle_name ? ' ' + data.middle_name : ''}${data.extension_name ? ' ' + data.extension_name : ''}`],
-                ['Sex', data.sex],
-                ['Date of birth', formatDate(data.date_of_birth)],
-                ['TIN', data.tin],
-                ['PWD?', data.pwd],
-                ['IP group member?', data.ip_group_member],
-                ['Ethnicity', data.ethnicity],
-            ],
-        },
-        {
-            title: 'Position & salary',
-            rows: [
-                ['Title', data.position_title],
-                ['Position from', formatDate(data.position_from)],
-                ['Position to', formatDate(data.position_to)],
-                ['Salary grade', data.salary_grade],
-                ['Salary step', data.salary_grade_step],
-                ['Monthly salary', data.monthly_salary],
-                ['Employee status', data.employee_status],
-                ['Appointment nature', data.nature_of_appointment],
-                ['Position level', data.position_level],
-                ['Appointment status', data.appointment_status],
-            ],
-        },
-        {
-            title: 'Agency information',
-            rows: [
-                ['Department', data.department],
-                ['School / district', data.school_district],
-                ['Sector', data.sector],
-                ['Agency name', data.agency_name],
-                ['Plantilla item no.', data.plantilla_item_number],
-                ['Plantilla page no.', data.plantilla_page_number],
-                ['ODC number', data.odc_number],
-                ['Date received (records)', formatDate(data.date_received_records)],
-                ['Date received (HR)', formatDate(data.date_received_hr)],
-                ['Previous incumbent', data.previous_incumbent],
-                ['Incumbent', data.incumbent],
-                ['Publication mode', data.publication_mode],
-            ],
-        },
-        {
-            title: 'Eligibility & history',
-            rows: [
-                ['Eligibility type', data.eligibility_type],
-                ['Eligibility validity', formatDate(data.eligibility_validity)],
-                ['First time used', data.eligibility_first_used],
-                ['Original appointment date', formatDate(data.date_original_appointment)],
-                ['Last promotion date', formatDate(data.date_last_promotion)],
-                ['Record state', data.display_record_state ?? ''],
-                ['Date concluded', formatDate(data.date_concluded)],
-                ['Encoding personnel', data.encoding_personnel],
-                ['Date encoded', formatDateTime(data.encoded_at)],
-            ],
-        },
+    const employeeName = `${data.last_name || ''}, ${data.first_name || ''}${data.middle_name ? ' ' + data.middle_name : ''}${data.extension_name ? ' ' + data.extension_name : ''}`.replace(/,\s+/g, ', ').trim();
+
+    const appointmentRows = [
+        ['Full name', employeeName],
+        ['Position', data.position_title],
+        ['Salary grade', data.salary_grade],
+        ['Employee status', data.employee_status],
+        ['District', data.school_district],
+        ['School', data.school],
+        ['Plantilla number', data.plantilla_item_number],
+        ['Page number', data.plantilla_page_number],
+        ['Salary in words', data.compensation_words],
+        ['Salary in numbers', data.compensation_numbers],
+        ['Appointment nature', data.nature_of_appointment],
+        ['Incumbent', data.previous_incumbent],
+        ['Reason of Incumbent', data.natural_vacancy],
+        ['Date of appointment', formatDate(data.date_original_appointment)],
+        ['Date of signing', formatDate(data.date_of_signing)],
+        ['Date of validity', formatDate(data.eligibility_validity)],
     ];
 
-    return sections.map(section => `
-        <div class="review-section">
-            <h3>${section.title}</h3>
-            <div class="review-grid">
-                ${section.rows.map(row => `
-                    <div class="review-row"><span class="review-key">${row[0]}</span><span class="review-val">${row[1] || '—'}</span></div>
+    const checklistRows = [
+        ['Employee name', employeeName],
+        ['Position', data.position_title],
+        ['Salary grade', data.salary_grade],
+        ['Salary number', data.compensation_numbers],
+        ['Date of signing', formatDate(data.date_of_signing)],
+    ];
+
+    const raiRows = [
+        ['Employee name', employeeName],
+        ['Position', data.position_title],
+        ['Plantilla number', data.plantilla_item_number],
+        ['Salary grade', data.salary_grade],
+        ['Salary number', data.compensation_numbers],
+        ['Employment status', data.employee_status],
+        ['Appointment nature', data.nature_of_appointment],
+    ];
+
+    const finalDeliberationRows = [
+        ['Employee name', employeeName],
+        ['Position', data.position_title],
+        ['Date of signing', formatDate(data.date_of_signing)],
+    ];
+
+    const sections = [
+        { key: 'appointment', title: 'Appointment', rows: appointmentRows },
+        { key: 'checklist', title: 'Checklist', rows: checklistRows },
+        { key: 'rai', title: 'RAI', rows: raiRows },
+        { key: 'final', title: 'Final Deliberation', rows: finalDeliberationRows },
+    ];
+
+    return `
+        <div class="view-summary-shell">
+            <div class="view-summary-tabs" role="tablist" aria-label="Appointment summary sections">
+                ${sections.map((section) => `
+                    <button type="button" class="view-tab-trigger ${section.key === 'appointment' ? 'active' : ''}" role="tab" aria-selected="${section.key === 'appointment' ? 'true' : 'false'}" data-tab="${section.key}">${section.title}</button>
+                `).join('')}
+            </div>
+            <div class="view-tab-panels">
+                ${sections.map((section) => `
+                    <div class="view-tab-panel ${section.key === 'appointment' ? 'active' : ''}" data-tab="${section.key}" role="tabpanel" ${section.key === 'appointment' ? '' : 'hidden'}>
+                        <div class="view-summary-section">
+                            <h3>${escapeHtml(section.title)}</h3>
+                            <div class="review-grid">
+                                ${section.rows.map((row) => `
+                                    <div class="review-row"><span class="review-key">${escapeHtml(row[0])}</span><span class="review-val">${escapeHtml(row[1] || '—')}</span></div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
                 `).join('')}
             </div>
         </div>
-    `).join('');
+    `;
 }
 
 function formatDate(value) {

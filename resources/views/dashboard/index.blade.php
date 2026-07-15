@@ -197,7 +197,7 @@
 
         <div class="stat-card">
             <div class="stat-head">
-                <span class="stat-label">Temporary / casual</span>
+                <span class="stat-label">Substitute / Provisional</span>
                 <span class="stat-icon"><i class="ti ti-clock-hour-4" aria-hidden="true"></i></span>
             </div>
             <div class="stat-value">{{ $tempCount }}</div>
@@ -215,14 +215,14 @@
     </div>
 
     <div class="dash-grid">
-        <div class="dash-card">
+        <div class="dash-card encoded-card">
             <div class="dash-card-title">Appointments encoded (last 6 months)</div>
             @php $maxVal = max($trend->max('count'), 1); @endphp
             <div class="bar-chart">
                 @foreach ($trend as $point)
                     <div class="bar-col">
                         <div class="bar-stack">
-                            <div class="bar-seg" style="height: {{ round($point['count'] / $maxVal * 150) }}px"></div>
+                            <div class="bar-seg" style="height: {{ round($point['count'] / $maxVal * 110) }}px"></div>
                         </div>
                         <span class="bar-month">{{ $point['label'] }}</span>
                     </div>
@@ -233,37 +233,61 @@
             </div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-title">By employment status</div>
-            @if ($statusBreakdown->isEmpty())
+        <div class="dash-card status-card">
+            <div class="dash-card-title">Appointments by status</div>
+            @php
+                $statusChart = [
+                    'Active'      => ['count' => $statusCounts['Active'], 'color' => '#1565C0'],
+                    'In Progress' => ['count' => $statusCounts['In Progress'], 'color' => '#C8870B'],
+                    'Completed'   => ['count' => $statusCounts['Completed'], 'color' => '#1F7A44'],
+                ];
+                $statusMax = max(array_merge(array_column($statusChart, 'count'), [1]));
+                $statusTotal = array_sum(array_column($statusChart, 'count'));
+
+                $acc = 0;
+                $pieSegments = [];
+                foreach ($statusChart as $label => $item) {
+                    $start = $statusTotal ? ($acc / $statusTotal * 100) : 0;
+                    $acc += $item['count'];
+                    $end = $statusTotal ? ($acc / $statusTotal * 100) : 0;
+                    $pieSegments[] = $item['color'] . ' ' . $start . '% ' . $end . '%';
+                }
+                $pieGradient = implode(', ', $pieSegments);
+            @endphp
+            @if ($statusTotal === 0)
                 <p class="empty-note">No appointments encoded yet.</p>
             @else
-                @php
-                    $maxCount = $statusBreakdown->max();
-                    $colors = [
-                        'Permanent' => 'var(--green)',
-                        'Temporary' => 'var(--amber)',
-                        'Casual' => '#7a8aa0',
-                        'Contractual' => 'var(--accent)',
-                        'Coterminous' => '#8a6dca',
-                    ];
-                @endphp
-                <div class="status-list">
-                    @foreach ($statusBreakdown as $status => $count)
-                        <div class="status-row">
-                            <span class="status-name">{{ $status }}</span>
-                            <div class="status-bar-track">
-                                <div class="status-bar-fill" style="width: {{ round($count / $maxCount * 100) }}%; background: {{ $colors[$status] ?? 'var(--accent)' }}"></div>
-                            </div>
-                            <span class="status-count">{{ $count }}</span>
+                <div class="status-pie-wrap">
+                    <div class="status-pie-box">
+                        <div class="status-pie" style="background: conic-gradient({{ $pieGradient }});"></div>
+                        <div class="status-pie-center">
+                            <span class="status-pie-total">{{ $statusTotal }}</span>
+                            <span class="status-pie-label">Total</span>
                         </div>
-                    @endforeach
+                    </div>
+
+                    <div class="status-list">
+                        @foreach ($statusChart as $label => $item)
+                            <div class="status-row">
+                                <span class="status-name">{{ $label }}</span>
+                                <div class="status-bar-track">
+                                    <div class="status-bar-fill" style="width: {{ round($item['count'] / $statusMax * 100) }}%; background: {{ $item['color'] }}"></div>
+                                </div>
+                                <span class="status-count">{{ $item['count'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="chart-legend" style="margin-top:14px; justify-content:center; flex-wrap:wrap;">
+                    <span><span class="legend-dot" style="background:#1565C0"></span>Active</span>
+                    <span><span class="legend-dot" style="background:#C8870B"></span>In Progress</span>
+                    <span><span class="legend-dot" style="background:#1F7A44"></span>Completed</span>
                 </div>
             @endif
         </div>
     </div>
 
-    @if (auth()->user()?->isHr() || auth()->user()?->isManager())
+        @if (auth()->user()?->isHr() || auth()->user()?->isManager())
         <div class="dash-grid full-width" style="margin-top: 18px;">
             <div class="dash-card">
                 <div class="dash-card-title">Recently encoded</div>

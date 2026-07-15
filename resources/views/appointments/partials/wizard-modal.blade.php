@@ -41,7 +41,7 @@
                         </div>
                         <div class="wz-field"><label>Employment status *</label>
                             <select name="employee_status" id="f-estatus" required>
-                                <option value="">Select</option><option>Permanent</option><option>Temporary</option><option>Casual</option><option>Contractual</option><option>Coterminous</option>
+                                <option value="">Select</option><option>Permanent</option><option>Substitute</option><option>Provisional</option>
                             </select>
                         </div>
                         <div class="wz-field"><label>District</label><input type="text" name="school_district" id="f-school" placeholder="e.g. Batangas NHS"></div>
@@ -53,14 +53,14 @@
                         <div class="wz-field span3"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos"></div>
 
                         <div class="wz-field span2"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00"></div>
-                        <div class="wz-field"><label>Appointment nature *</label>
+                        <div class="wz-field"><label>Nature of Appointment *</label>
                             <select name="nature_of_appointment" id="f-nature" required>
-                                <option value="">Select</option><option>Original</option><option>Promotion</option><option>Transfer</option><option>Reappointment</option><option>Reinstatement</option>
+                                <option value="">Select</option><option>Original</option><option>Promotion</option><option>Demotion</option><option>Transfer</option><option>Re-Classification</option><option>Re-Employment</option><option>Re-Appointment</option>
                             </select>
                         </div>
 
-                        <div class="wz-field"><label>Vice</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name"></div>
-                        <div class="wz-field"><label>Natural vacancy</label><input type="text" name="natural_vacancy" id="f-natural" placeholder="e.g. Yes / No"></div>
+                        <div class="wz-field"><label>Incumbent</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name"></div>
+                        <div class="wz-field"><label>Reason of Incumbent</label><input type="text" name="natural_vacancy" id="f-natural" placeholder="e.g. Transferred, Promotion,..."></div>
                         <div class="wz-field"><label>Date of appointment</label><input type="date" name="date_original_appointment" id="f-doa"></div>
 
                         <div class="wz-field"><label>Date of signing</label><input type="date" name="date_of_signing" id="f-dosign"></div>
@@ -229,8 +229,8 @@ function wzBuildReview() {
             ['Position', wg('f-pos')], ['Salary grade', wg('f-sg')],
             ['Employment status', wg('f-estatus')], ['District', wg('f-school')], ['School', wg('f-school-new')],
             ['Salary in words', wg('f-salwords')], ['Salary in numbers', wg('f-salnums')],
-            ['Appointment nature', wg('f-nature')], ['Vice', wg('f-prev')],
-            ['Natural vacancy', wg('f-natural')], ['Plantilla number', wg('f-plantilla-item')],
+            ['Appointment nature', wg('f-nature')], ['Incumbent', wg('f-prev')],
+            ['Reason', wg('f-natural')], ['Plantilla number', wg('f-plantilla-item')],
             ['Page number', wg('f-plantilla-page')], ['Date of appointment', wg('f-doa')],
             ['Date of signing', wg('f-dosign')], ['Date of validity', wg('f-eligvalid')]
         ]},

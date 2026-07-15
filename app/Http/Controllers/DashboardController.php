@@ -15,7 +15,7 @@ class DashboardController extends Controller
 
         $permanentCount = Appointment::active()->where('employee_status', 'Permanent')->count();
         $tempCount = Appointment::active()
-            ->whereIn('employee_status', ['Temporary', 'Casual', 'Contractual'])
+            ->whereIn('employee_status', ['Substitute', 'Provisional'])
             ->count();
 
         $driver = DB::getDriverName();
@@ -65,6 +65,13 @@ class DashboardController extends Controller
             ->groupBy('employee_status')
             ->pluck('total', 'employee_status');
 
+        // Appointment record-state counts (Active / In Progress / Completed)
+        $statusCounts = [
+            'Active'      => Appointment::whereIn('record_state', ['active', 'new'])->count(),
+            'In Progress' => Appointment::where('record_state', 'in_progress')->count(),
+            'Completed'   => Appointment::where('record_state', 'completed')->count(),
+        ];
+
         // Recently encoded (latest 5)
         $recent = Appointment::active()
             ->orderByDesc('encoded_at')
@@ -78,6 +85,7 @@ class DashboardController extends Controller
             'encodedThisMonth' => $encodedThisMonth,
             'trend'            => $trend,
             'statusBreakdown'  => $statusBreakdown,
+            'statusCounts'     => $statusCounts,
             'recent'           => $recent,
         ];
 
