@@ -1,0 +1,251 @@
+/* ════════════════════════════════════════
+   SIDEBAR LAYOUT
+════════════════════════════════════════ */
+
+.hr-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background-color: var(--hr-primary, #003087);
+  color: #e8edf0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  /* overflow:visible keeps tooltips from being clipped in collapsed state */
+  overflow: visible;
+  z-index: 50;
+
+  /* ── Collapsed & logo-only states ── */
+  &.collapsed,
+  &.logo-only {
+    width: var(--sidebar-w-collapsed);
+
+    & .hr-sidebar-brand {
+      justify-content: center;
+
+      & + .hr-sidebar-brand-text,
+      .hr-sidebar-brand-text { display: none; }
+    }
+
+    & .hr-sidebar-logo {
+      display: block;
+      max-height: 2.25rem;
+      width: auto;
+      margin: 0 auto;
+    }
+
+    & .nav-link {
+      justify-content: center;
+      padding: 0.65rem 0;
+
+      & i {
+        margin-right: 0;
+        width: auto;
+        font-size: 1.3rem;
+      }
+
+      & .nav-label { display: none; }
+    }
+
+    & .nav-section-title { visibility: hidden; }
+  }
+
+  /* ── Tooltip arrows — only shown when collapsed ── */
+  &.collapsed .nav-link:hover::after,
+  &.logo-only .nav-link:hover::after,
+  &.collapsed .nav-link:hover::before,
+  &.logo-only .nav-link:hover::before {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  &:not(.collapsed) .nav-link::after,
+  &:not(.collapsed) .nav-link::before {
+    display: none;
+  }
+}
+
+/* ── Brand bar ───────────────────────── */
+.hr-sidebar-brand {
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 var(--space-6);
+  border-bottom: 1px solid var(--hr-primary-dark, #0a1a33);
+
+  & img {
+    display: block;
+    max-height: 3.4375rem; /* 55px */
+    width: auto;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 901px) {
+  .hr-sidebar:not(.collapsed) .hr-sidebar-brand img {
+    max-height: 4.375rem; /* 70px */
+  }
+}
+
+.hr-sidebar-brand-text {
+  display: block;
+  max-height: 2.25rem;
+  width: auto;
+}
+
+/* ── Nav links ───────────────────────── */
+.hr-sidebar-links {
+  padding: 0.65rem 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* overflow:visible lets tooltips extend past the sidebar edge */
+  overflow: visible;
+}
+
+.hr-sidebar .nav-link {
+  color: #c9d4d9;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  position: relative;
+  overflow: visible;
+
+  /* Tooltip bubble */
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translate(0.875rem, -50%);
+    white-space: nowrap;
+    background: #111;
+    color: #fff;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: .02em;
+    border-radius: 0.875rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease, visibility .15s ease;
+    pointer-events: none;
+    box-shadow: 0 1.25rem 2.25rem rgba(0, 0, 0, 0.22);
+    z-index: 1000;
+  }
+
+  /* Tooltip arrow */
+  &::before {
+    content: '';
+    position: absolute;
+    left: calc(100% + 0.5rem);
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 0.625rem;
+    height: 0.625rem;
+    background: #111;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .15s ease, visibility .15s ease;
+    z-index: 1000;
+  }
+
+  & i {
+    width: 1.5rem;
+    margin-right: 0.75rem;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+
+    &.dashboard-icon {
+      font-size: 0.875rem;
+      margin-left: 0.125rem;
+    }
+  }
+
+  & .nav-label { display: inline; }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
+  &.active {
+    background-color: var(--hr-primary-dark, #0a1a33);
+    color: #fff;
+    border-left-color: var(--hr-accent, #ffd700);
+  }
+}
+
+.hr-sidebar .nav-section-title {
+  color: rgba(255, 255, 255, 0.756);
+  font-size: 0.72rem;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.5rem;
+  opacity: 0.95;
+}
+
+/* ── Collapsed icon size override ───── */
+.hr-sidebar.collapsed .nav-link i.dashboard-icon,
+.hr-sidebar.logo-only  .nav-link i.dashboard-icon {
+  font-size: 0.875rem;
+}
+
+/* ── Logo (icon-mode) ────────────────── */
+.hr-sidebar-logo {
+  display: none;
+  max-height: 2rem;
+  width: auto;
+}
+
+/* ── Logout ──────────────────────────── */
+.logout-form {
+  width: 100%;
+  margin-top: auto;
+}
+
+.logout-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.625rem;
+  padding: 0.5625rem 1.125rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+
+  &:hover,
+  &:focus-visible {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    outline: none;
+  }
+}
+
+.hr-sidebar-collapse { display: none; }
+
+/* ── Responsive sidebar ──────────────── */
+@media (max-width: 900px) {
+  .hr-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    width: var(--sidebar-w);
+
+    &.visible { transform: translateX(0); }
+  }
+}

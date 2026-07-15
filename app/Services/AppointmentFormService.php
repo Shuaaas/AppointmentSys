@@ -12,6 +12,9 @@ use RuntimeException;
 
 class AppointmentFormService
 {
+    /**
+     * Generate the main Appointment Form (.docx) for the given appointment.
+     */
     public function generate(Appointment $appointment): string
     {
         $templatePath = resource_path('templates/Appointment Form Generated Template.docx');
@@ -20,27 +23,12 @@ class AppointmentFormService
             throw new RuntimeException('Appointment form template was not found.');
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
-
-        $filename = sprintf(
-            'appointment-form-%s-%s.docx',
-            $appointment->id,
-            now()->format('YmdHis')
-        );
-
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $filename;
-
-        $rawProcessor = new TemplateProcessor($templatePath);
-        \Log::info('RAW template variables (no normalization)', $rawProcessor->getVariables());
-
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf('appointment-form-%s-%s.docx', $appointment->id, now()->format('YmdHis'));
 
         $templateCopy = $this->normalizeTemplatePlaceholderSyntax($templatePath);
-        $processor = new TemplateProcessor($templateCopy);
-
-        \Log::info('Template variables detected', $processor->getVariables());
-        \Log::info('Values being applied', array_keys($this->placeholderValues($appointment)));
-
+        $processor    = new TemplateProcessor($templateCopy);
 
         foreach ($this->placeholderValues($appointment) as $placeholder => $value) {
             $processor->setValue($placeholder, $value);
@@ -56,32 +44,28 @@ class AppointmentFormService
     }
 
     /**
-     * Generate a document from a specific template filename located in resources/templates.
-     * Falls back to the default generate() behaviour when the provided template is missing.
+     * Generate a document from a specific template filename in resources/templates.
+     * Falls back to generate() when the provided template is missing.
      */
     public function generateWithTemplateFile(Appointment $appointment, string $templateFilename): string
     {
         $templatePath = resource_path('templates/' . $templateFilename);
 
         if (! File::exists($templatePath)) {
-            // Fall back to default generator
             return $this->generate($appointment);
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
-
-        $filename = sprintf(
-            '%s-%s-%s.docx',
-            pathinfo($templateFilename, PATHINFO_FILENAME),
-            $appointment->id,
-            now()->format('YmdHis')
-        );
-
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $filename;
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf(
+                '%s-%s-%s.docx',
+                pathinfo($templateFilename, PATHINFO_FILENAME),
+                $appointment->id,
+                now()->format('YmdHis')
+            );
 
         $templateCopy = $this->normalizeTemplatePlaceholderSyntax($templatePath);
-        $processor = new TemplateProcessor($templateCopy);
+        $processor    = new TemplateProcessor($templateCopy);
 
         foreach ($this->placeholderValues($appointment) as $placeholder => $value) {
             $processor->setValue($placeholder, $value);
@@ -96,6 +80,9 @@ class AppointmentFormService
         return $outputPath;
     }
 
+    /**
+     * Generate the Final Deliberation document (.docx) for the given appointment.
+     */
     public function generateFinalDeliberation(Appointment $appointment): string
     {
         $templatePath = resource_path('templates/FINAL DELIBERATION_NEW TEMPLATE.docx');
@@ -104,18 +91,12 @@ class AppointmentFormService
             throw new RuntimeException('Final Deliberation template was not found.');
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf('final-deliberation-%s-%s.docx', $appointment->id, now()->format('YmdHis'));
 
-        $filename = sprintf(
-            'final-deliberation-%s-%s.docx',
-            $appointment->id,
-            now()->format('YmdHis')
-        );
-
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $filename;
         $templateCopy = $this->normalizeTemplatePlaceholderSyntax($templatePath);
-        $processor = new TemplateProcessor($templateCopy);
+        $processor    = new TemplateProcessor($templateCopy);
 
         foreach ($this->finalDeliberationValues($appointment) as $placeholder => $value) {
             $processor->setValue($placeholder, $value);
@@ -131,8 +112,7 @@ class AppointmentFormService
     }
 
     /**
-     * Generate the Appointment Processing Checklist (.xlsx) with ${...} placeholders
-     * replaced by live data from the given Appointment.
+     * Generate the Appointment Processing Checklist (.xlsx) for the given appointment.
      */
     public function generateChecklist(Appointment $appointment): string
     {
@@ -142,26 +122,15 @@ class AppointmentFormService
             throw new RuntimeException('Checklist template was not found.');
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
-
-        $filename = sprintf(
-            'checklist-%s-%s.xlsx',
-            $appointment->id,
-            now()->format('YmdHis')
-        );
-
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $filename;
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf('checklist-%s-%s.xlsx', $appointment->id, now()->format('YmdHis'));
 
         /** @var Spreadsheet $spreadsheet */
         $spreadsheet = IOFactory::load($templatePath);
-        $sheet = $spreadsheet->getActiveSheet();
+        $sheet       = $spreadsheet->getActiveSheet();
 
-        $values = $this->checklistPlaceholderValues($appointment);
-
-        \Log::info('Checklist placeholder values being applied', $values);
-
-        $this->replacePlaceholdersInSheet($sheet, $values);
+        $this->replacePlaceholdersInSheet($sheet, $this->checklistPlaceholderValues($appointment));
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputPath);
@@ -173,6 +142,9 @@ class AppointmentFormService
         return $outputPath;
     }
 
+    /**
+     * Generate the Report on Appointment Issued (.xlsx) for the given appointment.
+     */
     public function generateRai(Appointment $appointment): string
     {
         $templatePath = resource_path('templates/Report on Appointment Issued.xlsx');
@@ -181,26 +153,15 @@ class AppointmentFormService
             throw new RuntimeException('RAI template was not found.');
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
-
-        $filename = sprintf(
-            'rai-%s-%s.xlsx',
-            $appointment->id,
-            now()->format('YmdHis')
-        );
-
-        $outputPath = $outputDirectory . DIRECTORY_SEPARATOR . $filename;
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf('rai-%s-%s.xlsx', $appointment->id, now()->format('YmdHis'));
 
         /** @var Spreadsheet $spreadsheet */
         $spreadsheet = IOFactory::load($templatePath);
-        $sheet = $spreadsheet->getActiveSheet();
+        $sheet       = $spreadsheet->getActiveSheet();
 
-        $values = $this->raiPlaceholderValues($appointment);
-
-        \Log::info('RAI placeholder values being applied', $values);
-
-        $this->replacePlaceholdersInSheet($sheet, $values);
+        $this->replacePlaceholdersInSheet($sheet, $this->raiPlaceholderValues($appointment));
         $this->uppercaseSheetText($sheet);
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
@@ -380,6 +341,18 @@ class AppointmentFormService
 
         $zip->close();
         return $normalizedPath;
+    }
+
+    /**
+     * Ensures the temporary output directory exists and returns its path.
+     * Centralizes the repeated storage_path + ensureDirectoryExists pattern.
+     */
+    private function ensureOutputDirectory(): string
+    {
+        $path = storage_path('app/temp/appointment-forms');
+        File::ensureDirectoryExists($path);
+
+        return $path;
     }
 
     private function normalizePlaceholderStrings(string $content): string

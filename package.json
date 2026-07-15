@@ -3,8 +3,10 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "dev": "vite",
         "build": "vite build",
-        "dev": "vite"
+        "css:watch": "node watch-css.cjs",
+        "css:sync": "node -e \"const fs=require('fs'),path=require('path');function sync(d,b){fs.readdirSync(d,{withFileTypes:true}).forEach(e=>{const f=path.join(d,e.name);if(e.isDirectory())sync(f,b);else if(e.name.endsWith('.css')){const rel=path.relative(b,f),dest=path.join('public','css',rel);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(f,dest);console.log('synced:',rel);}});}sync('resources/css','resources/css');\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

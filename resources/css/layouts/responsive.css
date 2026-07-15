@@ -1,0 +1,412 @@
+/* ════════════════════════════════════════
+   PAMS — RESPONSIVE OVERRIDES
+   Breakpoints (mobile-first, largest → smallest):
+     ≤ 1200px  large tablet / small laptop
+     ≤  900px  tablet / collapsed sidebar
+     ≤  600px  large phone
+     ≤  480px  small phone
+════════════════════════════════════════ */
+
+/* ══════════════════════════════════════
+   ≤ 1200px — compress wide grids
+══════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Wizard full-page: keep 2-col grid instead of forcing 3 */
+  .wizard-page .wz-grid:not(.cols3) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ══════════════════════════════════════
+   ≤ 900px — sidebar collapses, tablet layout
+══════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* ── Header ─────────────────────────── */
+  .hr-header {
+    padding: 0 var(--space-6);
+  }
+
+  /* Hide the centred datetime on tablet — it overlaps menu buttons */
+  .hr-header-datetime {
+    display: none;
+  }
+
+  /* ── Pagebar ─────────────────────────── */
+  .hr-pagebar {
+    padding: 0.625rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .hr-page-title {
+    font-size: 0.9375rem;
+  }
+
+  /* ── Content padding ─────────────────── */
+  .hr-main,
+  .content {
+    padding: var(--space-8);
+  }
+
+  /* ── Grids ───────────────────────────── */
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* ── Status pie wraps to single column ─ */
+  .status-pie-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Wizard grids collapse ───────────── */
+  .wz-grid,
+  .wz-grid.cols3,
+  .wizard-page .wz-grid:not(.cols3) {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-field.span2,
+  .wz-field.span3,
+  .wizard-page .wz-field.span2 {
+    grid-column: span 1;
+  }
+
+  .page-panel .card-body {
+    padding: 1.25rem;
+  }
+
+  /* ── Wizard footer stacks ────────────── */
+  .wz-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+
+    & > div {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* ── Wizard full-page progress bar wraps */
+  .wizard-page .wz-progress {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .wizard-page .wz-step-dot {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+
+  .wizard-page .wz-dot {
+    width: 100%;
+  }
+
+  .wizard-page .wz-step-dot:not(:last-child)::after {
+    display: none; /* remove connector lines when steps wrap */
+  }
+
+  /* ── Modal full-width on tablet ─────── */
+  .modal {
+    max-width: calc(100vw - 2rem);
+    margin: auto;
+  }
+
+  /* ── Info grid in modal view panel ─── */
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-full {
+    grid-column: span 1;
+  }
+
+  .section-sep,
+  .section-head {
+    grid-column: span 1;
+  }
+
+  /* ── Add User two-column password row ─ */
+  .au-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* ══════════════════════════════════════
+   ≤ 600px — large phone
+══════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* ── Tighten content padding ─────────── */
+  .hr-main,
+  .content {
+    padding: var(--space-6);
+  }
+
+  /* ── Header shrinks ──────────────────── */
+  .hr-header {
+    padding: 0 var(--space-4);
+  }
+
+  /* ── All grids go single column ──────── */
+  .stat-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  /* ── Summary card typography ─────────── */
+  .summary-value {
+    font-size: 1.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  /* ── Action bar stacks ───────────────── */
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action-bar-right {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  /* ── Search and date filter go full-width */
+  .search-wrap {
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .date-control {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  /* ── Table horizontal scroll  ────────── */
+  .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Dropdown panel stacks ───────────── */
+  .drop-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* ── Records tab pills wrap ──────────── */
+  .records-tabs {
+    gap: 0.375rem;
+  }
+
+  .records-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  /* ── Wizard cols3 drops to 2 ─────────── */
+  .wz-grid.cols3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wz-field.span3 {
+    grid-column: span 2;
+  }
+
+  /* ── Modal goes nearly full screen ───── */
+  .overlay {
+    padding: 0.5rem;
+    align-items: flex-end; /* sheet slides up from bottom on phone */
+  }
+
+  .modal {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 92vh;
+  }
+
+  /* ── Dash card bar chart shrinks ─────── */
+  .bar-chart {
+    height: 8rem;
+    gap: 0.5rem;
+  }
+
+  /* ── Status pie goes smaller ─────────── */
+  .status-pie-box {
+    width: min(100%, 7rem);
+  }
+
+  /* ── footer bar stacks ───────────────── */
+  .footer-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+/* ══════════════════════════════════════
+   ≤ 480px — small phone
+══════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* ── Further tighten padding ─────────── */
+  .hr-main,
+  .content {
+    padding: var(--space-4);
+  }
+
+  /* ── Pagebar label only, no sub-text ─── */
+  .hr-pagebar {
+    padding: 0.5rem var(--space-4);
+  }
+
+  .hr-page-title {
+    font-size: 0.875rem;
+  }
+
+  /* ── Btn text wraps on tiny screens ──── */
+  .btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.625rem;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+
+  /* ── Wizard full-page: each step full row */
+  .wizard-page .wz-step-dot {
+    flex: 1 1 100%;
+  }
+
+  /* ── Modal body padding tightens ─────── */
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-head,
+  .modal-footer {
+    padding: 0.75rem 1rem;
+  }
+
+  /* ── Summary value smaller on tiny screen */
+  .summary-value {
+    font-size: 1.5rem;
+  }
+
+  /* ── Hide non-essential table columns ─── 
+     (requires data-label on tds in blade, 
+      but at minimum we allow horizontal scroll) */
+  .records-table {
+    min-width: 40rem; /* reduce min-width so less scrolling needed */
+  }
+
+  /* ── Review step labels wrap ─────────── */
+  .review-val {
+    max-width: 60%;
+    font-size: 0.75rem;
+  }
+
+  .review-key {
+    font-size: 0.75rem;
+  }
+
+  /* ── Tabs: full width pills ──────────── */
+  .view-summary-tabs {
+    gap: 0.25rem;
+  }
+
+  .view-tab-trigger {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.6875rem;
+  }
+
+  /* ── Records tabs: scrollable row ───── */
+  .records-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.25rem;
+  }
+
+  .records-tab {
+    flex-shrink: 0;
+  }
+
+  /* ── Wz-grid.cols3 goes 1 col ─────────  */
+  .wz-grid.cols3 {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-field.span3 {
+    grid-column: span 1;
+  }
+
+  /* ── Stat card compact ───────────────── */
+  .stat-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.375rem;
+  }
+}
+
+/* ══════════════════════════════════════
+   GLOBAL UTILITY: prevent horizontal bleed
+══════════════════════════════════════ */
+html {
+  overflow-x: hidden;
+}
+
+.main {
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+/* Tables always scroll horizontally — never break the layout */
+.tbl-wrap,
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Avoid images blowing out containers */
+img {
+  max-width: 100%;
+  height: auto;
+}

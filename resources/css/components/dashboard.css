@@ -1,0 +1,318 @@
+/* ════════════════════════════════════════
+   DASHBOARD — Cards, Charts, Status Widgets
+════════════════════════════════════════ */
+
+.view-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+/* ── Summary cards (Records role) ────── */
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-summary-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem 1.375rem;
+  box-shadow: 0 1.125rem 2.5rem rgba(18, 38, 63, .06);
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-muted-text-alt);
+  letter-spacing: .08em;
+  margin-bottom: 0.625rem;
+}
+
+.summary-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-body-darker);
+}
+
+.summary-needs         { background: #f8fbff; border-color: rgba(59, 130, 246, .16); }
+.summary-completed-today { background: #f2fdf7; border-color: rgba(16, 185, 129, .16); }
+.summary-total-month   { background: #fff7ed; border-color: rgba(245, 158, 11, .16); }
+
+/* ── Stat cards (Admin / HR dashboard) ─ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 1.125rem 1.25rem;
+}
+
+.stat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.625rem;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.stat-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4375rem;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+
+  &.up { color: var(--green); }
+}
+
+/* ── Two-column dashboard layout ─────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1.125rem;
+
+  &.full-width { grid-template-columns: 1fr; }
+}
+
+.dash-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.dash-card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+/* ── Bar chart ───────────────────────── */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.875rem;
+  height: 11.25rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.25rem;
+}
+
+.bar-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 0.125rem;
+  max-width: 2.25rem;
+}
+
+.bar-seg {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  transition: height .3s;
+  background: var(--hr-primary, #003087);
+}
+
+.bar-month {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 0.375rem;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 2px;
+  margin-right: 0.3125rem;
+  vertical-align: middle;
+}
+
+/* ── Status donut + bar list ─────────── */
+.status-pie-wrap {
+  display: grid;
+  grid-template-columns: minmax(7.625rem, 9.375rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.status-pie-box {
+  position: relative;
+  width: min(100%, 8.25rem);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.status-pie {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.status-pie-center {
+  position: absolute;
+  inset: 32%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-white);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  text-align: center;
+}
+
+.status-pie-total {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.status-pie-label {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.125rem;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.status-name {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  width: 5.625rem;
+  flex-shrink: 0;
+}
+
+.status-bar-track {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--color-bar-track);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.status-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.status-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 1.625rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Recent appointments list ────────── */
+.recent-list { display: flex; flex-direction: column; }
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+}
+
+.recent-name {
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.recent-meta {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 0.0625rem;
+}
+
+/* ── Responsive breakpoints ──────────── */
+@media (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .status-pie-wrap { grid-template-columns: 1fr; }
+  .status-pie-box  { width: min(100%, 7.75rem); }
+}
+
+@media (max-width: 600px) {
+  .stat-grid { grid-template-columns: 1fr; }
+}

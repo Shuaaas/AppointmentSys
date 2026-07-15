@@ -1,0 +1,171 @@
+/* ════════════════════════════════════════
+   MAIN LAYOUT — Header, Pagebar, Topbar,
+   Content frame, Alerts
+════════════════════════════════════════ */
+
+/* ── Main content wrapper ────────────── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.hr-sidebar.collapsed + .main {
+  margin-left: var(--sidebar-w-collapsed);
+}
+
+@media (max-width: 900px) {
+  .main { margin-left: 0; }
+}
+
+/* ── App header (primary nav bar) ────── */
+.hr-header {
+  height: var(--topbar-h);
+  background-color: var(--hr-primary, #003087);
+  border-bottom: 1px solid var(--hr-primary-dark, #0a1a33);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-14);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.hr-header-left,
+.hr-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.hr-header-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ── Icon buttons (topbar) ───────────── */
+.btn-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: #e8edf0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background-color: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color .15s, color .15s, transform .15s ease;
+
+  &.active i { transform: scale(1.15); }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}
+
+.hr-header-datetime {
+  color: #c9d4d9;
+  font-size: 0.85rem;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ── Pagebar (breadcrumb / page title) ─ */
+.hr-pagebar {
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-pagebar-border);
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hr-page-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hr-user-meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+
+  & i {
+    font-size: 1rem;
+    color: var(--text-muted);
+  }
+}
+
+/* ── Inner page padding ──────────────── */
+.hr-main  { padding: var(--space-14); }
+.content  { padding: var(--space-14); flex: 1; }
+
+/* ── Legacy topbar (secondary pages) ── */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-14);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.topbar-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+
+  & i {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+  }
+}
+
+/* ── Alerts ──────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.125rem;
+  font-size: 0.8125rem;
+
+  & ul { margin: 0.25rem 0 0 1rem; }
+}
+
+.alert-success {
+  background: var(--green-light);
+  color: var(--green);
+  border: 1px solid var(--color-success-border);
+}
+
+.alert-error {
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid var(--color-error-border);
+}

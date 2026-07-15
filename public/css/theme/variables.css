@@ -1,0 +1,116 @@
+/* ════════════════════════════════════════
+   PAMS — DESIGN TOKENS & GLOBAL RESET
+   All CSS custom properties live here.
+   Import this file first in every module.
+════════════════════════════════════════ */
+
+/* ── RESET ───────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── DESIGN TOKENS ───────────────────── */
+:root {
+  /* Layout */
+  --sidebar-w:          220px;
+  --sidebar-w-collapsed: 4rem;       /* 64px */
+  --topbar-h:           3.5rem;      /* 56px */
+
+  /* Backgrounds */
+  --page-bg:    #f4f6f8;
+  --card-bg:    #ffffff;
+  --sidebar-bg: #1a3a4a;
+
+  /* Borders */
+  --border:        #e2e6ea;
+  --border-strong: #c8cdd5;
+
+  /* Brand / Accent */
+  --accent:       #1a7a8a;
+  --accent-hover: #155f6d;
+  --accent-light: #e6f3f5;
+
+  /* Semantic Colors */
+  --green:       #2e7d52;
+  --green-light: #eaf3de;
+  --amber:       #9a6000;
+  --amber-light: #fdf3dc;
+  --red:         #b83232;
+  --red-light:   #fdeaea;
+
+  /* Typography */
+  --text-primary:   #1a2330;
+  --text-secondary: #4a5568;
+  --text-muted:     #8a95a8;
+  --font:           'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:      'Cascadia Code', 'Consolas', monospace;
+
+  /* Surfaces — magic hex colors extracted from inline uses */
+  --color-white:             #ffffff;
+  --color-thead-bg:          #f8f9fb;
+  --color-row-hover:         #f8fcfd;
+  --color-row-hover-alt:     #f8fbff;
+  --color-tab-bg:            #f7f9fc;
+  --color-input-border:      #cbd5e1;
+  --color-input-placeholder: #94a3b8;
+  --color-body-dark:         #0f172a;
+  --color-body-darker:       #102a43;
+  --color-muted-text-alt:    #64748b;
+  --color-muted-text-dark:   #334155;
+  --color-records-tn-border: #e3f2ff;
+  --color-section-border:    #e3ecf4;
+  --color-pagebar-border:    #e2e6e8;
+  --color-btn-secondary-bg:  #f8f9fb;
+  --color-badge-blue-bg:     #dbeeff;
+  --color-badge-blue-text:   #1a5a8a;
+  --color-summary-border:    #e9edf2;
+  --color-readonly-bg:       #f6f8fa;
+  --color-bar-track:         #eef1f4;
+  --color-tab-active:        #1d4ed8;
+  --color-tab-default-text:  #334155;
+
+  /* Semantic border/background pairs */
+  --color-success-border: #c9e3b3;
+  --color-error-border:   #f0bcbc;
+
+  /* Shadows */
+  --shadow:    0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, .1);
+
+  /* Border Radius */
+  --radius:    6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-pill: 999px;
+
+  /* Spacing scale (rem-based) */
+  --space-1:  0.125rem;  /* 2px  */
+  --space-2:  0.25rem;   /* 4px  */
+  --space-3:  0.375rem;  /* 6px  */
+  --space-4:  0.5rem;    /* 8px  */
+  --space-5:  0.625rem;  /* 10px */
+  --space-6:  0.75rem;   /* 12px */
+  --space-7:  0.875rem;  /* 14px */
+  --space-8:  1rem;      /* 16px */
+  --space-10: 1.25rem;   /* 20px */
+  --space-12: 1.5rem;    /* 24px */
+  --space-14: 1.75rem;   /* 28px */
+  --space-18: 2.25rem;   /* 36px */
+}
+
+/* ── BASE BODY ───────────────────────── */
+body {
+  font-family: var(--font);
+  background: var(--page-bg);
+  color: var(--text-primary);
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}

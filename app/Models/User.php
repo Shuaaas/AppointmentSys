@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -51,27 +52,26 @@ class User extends Authenticatable
         ];
     }
      /**
-     * Role helper methods — used everywhere instead of comparing
-     * $user->role === 'admin' directly, so the string lives in one place.
+     * Role helper methods — use the Role Enum instead of comparing strings directly.
      */
     public function isHr(): bool
     {
-        return $this->role === 'hr';
+        return $this->role === Role::Hr->value;
     }
  
     public function isRecords(): bool
     {
-        return $this->role === 'records';
+        return $this->role === Role::Records->value;
     }
  
     public function isManager(): bool
     {
-        return $this->role === 'manager';
+        return $this->role === Role::Manager->value;
     }
  
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === Role::Admin->value;
     }
  
     public function hasRole(string $role): bool
@@ -86,13 +86,7 @@ class User extends Authenticatable
 
     public function roleLabel(): string
     {
-        return match ($this->role) {
-            'hr' => 'HR Officer',
-            'records' => 'Records Officer',
-            'manager' => 'Manager',
-            'admin' => 'Administrator',
-            default => ucfirst((string) $this->role),
-        };
+        return Role::tryFrom($this->role)?->label() ?? ucfirst((string) $this->role);
     }
 
     public function profileLabel(): string
@@ -101,16 +95,11 @@ class User extends Authenticatable
     }
  
     /**
-     * Where to send this user after login. Used by the LoginController.
+     * Where to send this user after login.
+     * Delegates to the Role Enum to keep routing logic in one place.
      */
     public function dashboardRoute(): string
     {
-        return match ($this->role) {
-            'hr'      => 'dashboard.index',
-            'records' => 'appointments.index',
-            'manager' => 'dashboard.index',
-            'admin'   => 'dashboard.index',
-            default   => 'login',
-        };
+        return Role::tryFrom($this->role)?->dashboardRoute() ?? 'login';
     }
 }

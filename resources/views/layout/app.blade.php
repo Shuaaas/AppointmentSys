@@ -8,7 +8,14 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="{{ asset('css/page-loader.css') }}">
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+{{-- CDN: Axios (CSRF headers for AJAX) --}}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    window.axios = axios;
+    window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').content;
+</script>
 </head>
 <body>
 

@@ -1,0 +1,86 @@
+/* ════════════════════════════════════════
+   BUTTONS & BADGES
+════════════════════════════════════════ */
+
+/* ── Base button ─────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: var(--font);
+  transition: background .15s, opacity .15s;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:hover { opacity: .9; }
+
+  &.is-downloading {
+    pointer-events: none;
+    opacity: .85;
+  }
+}
+
+/* ── Button variants ─────────────────── */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+
+  &:hover { background: var(--accent-hover); }
+}
+
+.add-entry-btn {
+  background: var(--hr-primary, #003087);
+  border-color: var(--hr-primary, #003087);
+  color: #fff;
+
+  &:hover {
+    background: var(--hr-primary-dark, #0a1a33);
+    border-color: var(--hr-primary-dark, #0a1a33);
+  }
+}
+
+.btn-secondary {
+  background: var(--color-white);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+
+  &:hover { background: var(--color-btn-secondary-bg); }
+}
+
+.btn-success {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+/* ── Size modifier ───────────────────── */
+.btn-sm {
+  padding: 0.3125rem 0.6875rem;
+  font-size: 0.75rem;
+}
+
+/* ── Badges ──────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.5625rem;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.badge-blue  { background: var(--color-badge-blue-bg);  color: var(--color-badge-blue-text); }
+.badge-green { background: var(--green-light);           color: var(--green); }
+.badge-amber { background: var(--amber-light);           color: var(--amber); }
+.badge-teal  { background: var(--accent-light);          color: var(--accent); }
+.badge-red   { background: var(--red-light);             color: var(--red); }

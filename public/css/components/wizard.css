@@ -1,0 +1,471 @@
+/* ════════════════════════════════════════
+   WIZARD — Multi-step form (modal & full-page)
+════════════════════════════════════════ */
+
+/* ── Page-panel wrapper (full-page mode) */
+.page-panel {
+  padding: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  & .card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  & .card-body {
+    padding: 1.25rem 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.wizard-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wizard-modal { max-width: 41.25rem; }
+
+/* ── Step panels ─────────────────────── */
+.step-panel {
+  display: none;
+
+  &.active {
+    display: block;
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+/* ── Progress track ──────────────────── */
+.wz-progress {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 1.375rem;
+}
+
+.wz-step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3125rem;
+  flex: 1;
+  position: relative;
+
+  /* Connector line */
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 0.875rem;
+    left: calc(50% + 0.875rem);
+    width: calc(100% - 1.75rem);
+    height: 2px;
+    background: var(--border-strong);
+  }
+
+  &.done::after { background: var(--green); }
+
+  /* Modal-mode dot */
+  & .wz-dot {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--color-white);
+    position: relative;
+    z-index: 1;
+    transition: all .2s;
+  }
+
+  &.done .wz-dot {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  &.active .wz-dot {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  & .wz-dot-label {
+    font-size: 0.625rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  &.active .wz-dot-label {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  &.done .wz-dot-label { color: var(--green); }
+}
+
+/* ── Section header ──────────────────── */
+.wz-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1.125rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.wz-icon {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.0625rem;
+  flex-shrink: 0;
+}
+
+.wz-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wz-section-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Field grid ──────────────────────── */
+.wz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem 1.125rem;
+
+  &.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.wz-grid-note {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 0.125rem;
+}
+
+/* ── Individual field ────────────────── */
+.wz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  &.span2 { grid-column: span 2; }
+  &.span3 { grid-column: span 3; }
+
+  & label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  & input,
+  & select {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--color-white);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.6875rem;
+    outline: none;
+    font-family: var(--font);
+    transition: border .15s, box-shadow .15s;
+    width: 100%;
+
+    &:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26, 122, 138, .12);
+    }
+
+    &::placeholder { color: var(--text-muted); }
+  }
+
+  & select {
+    cursor: pointer;
+    color: var(--text-secondary);
+
+    & option { color: var(--text-primary); }
+  }
+
+  & .field-error {
+    font-size: 0.6875rem;
+    color: var(--red);
+  }
+}
+
+/* ── Read-only field state ───────────── */
+.wz-readonly {
+  background: var(--color-readonly-bg) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+  cursor: not-allowed;
+
+  &:focus {
+    box-shadow: none;
+    border-color: var(--border) !important;
+  }
+}
+
+/* ── Footer nav ──────────────────────── */
+.wz-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.125rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border);
+}
+
+.wz-counter {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Review step ─────────────────────── */
+.review-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.review-group-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 0.5rem;
+}
+
+.review-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3125rem 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+}
+
+.review-key {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.review-val {
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+  max-width: 55%;
+}
+
+/* ── Required field marker ───────────── */
+.req {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ── Success state ───────────────────── */
+.success-state {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+
+  & i {
+    font-size: 2.75rem;
+    color: var(--green);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  & p {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.375rem;
+  }
+
+  & span {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+}
+
+/* ════════════════════════════════════════
+   FULL-PAGE WIZARD OVERRIDES
+   Scales up the popup wizard for the
+   larger "New Appointment" page layout.
+════════════════════════════════════════ */
+.wizard-page {
+  & .wz-progress { margin-bottom: 2rem; }
+
+  & .wz-step-dot { gap: 0; }
+
+  /* Pill-style step tabs */
+  & .wz-dot {
+    width: 10.625rem;
+    height: auto;
+    padding: 0.5625rem 0.75rem;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border-strong);
+    background: var(--color-white);
+    color: var(--text-muted);
+    flex-direction: row;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    & .wz-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.375rem;
+      height: 1.375rem;
+      border-radius: 0.375rem;
+      flex-shrink: 0;
+      background: var(--border-strong);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    & .wz-dot-label {
+      font-size: 0.8125rem;
+      color: inherit;
+      line-height: 1.1;
+      text-align: left;
+    }
+  }
+
+  /* Active pill */
+  & .wz-step-dot.active .wz-dot {
+    background: var(--hr-primary, #003087);
+    border-color: var(--hr-primary, #003087);
+    color: #fff;
+
+    & .wz-num { background: rgba(255, 255, 255, .25); }
+  }
+
+  /* Done pill */
+  & .wz-step-dot.done .wz-dot {
+    background: var(--green, #2e7d52);
+    border-color: var(--green, #2e7d52);
+    color: #fff;
+
+    & .wz-num { background: rgba(255, 255, 255, .25); }
+  }
+
+  /* Active/done label color */
+  & .wz-step-dot.active .wz-dot-label,
+  & .wz-step-dot.done .wz-dot-label { color: #fff; }
+
+  /* Connector line (centered vertically between pills) */
+  & .wz-step-dot:not(:last-child)::after {
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2px;
+    left: calc(50% + 5.3125rem);
+    width: calc(100% - 10.625rem);
+  }
+
+  & .wz-dot-label        { font-size: 0.75rem; }
+  & .wz-section-head     { gap: 0.875rem; margin-bottom: 1.375rem; padding-bottom: 1.125rem; }
+  & .wz-icon             { width: 2.875rem; height: 2.875rem; font-size: 1.375rem; border-radius: var(--radius-lg); }
+  & .wz-section-title    { font-size: 1.125rem; }
+  & .wz-section-sub      { font-size: 0.8125rem; }
+  & .wz-grid             { gap: 1.125rem 1.5rem; }
+  & .wz-field label      { font-size: 0.8125rem; }
+  & .wz-field label .req { color: var(--red); }
+
+  & .wz-field input,
+  & .wz-field select     { padding: 0.6875rem 0.8125rem; font-size: 0.875rem; }
+
+  & .btn-primary {
+    background: var(--hr-primary, #003087);
+    border-color: var(--hr-primary, #003087);
+
+    &:hover {
+      background: var(--hr-primary-dark, #0a1a33);
+      border-color: var(--hr-primary-dark, #0a1a33);
+    }
+  }
+
+  & .wz-footer        { margin-top: 1.625rem; padding-top: 1.25rem; }
+  & .wz-counter       { font-size: 0.8125rem; }
+  & .review-grid      { gap: 1.25rem; }
+  & .review-row       { padding: 0.5rem 0; }
+
+  & .review-key,
+  & .review-val       { font-size: 0.875rem; }
+}
+
+/* ── Responsive wizard ───────────────── */
+@media (min-width: 1200px) {
+  .wizard-page .wz-grid:not(.cols3) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wizard-page .wz-field.span2 { grid-column: span 2; }
+}
+
+@media (max-width: 900px) {
+  .page-panel .card-body { padding: 1.25rem; }
+
+  .wz-grid,
+  .wz-grid.cols3,
+  .wizard-page .wz-grid:not(.cols3) {
+    grid-template-columns: 1fr;
+  }
+
+  .wz-field.span2,
+  .wz-field.span3,
+  .wizard-page .wz-field.span2 {
+    grid-column: span 1;
+  }
+
+  .wz-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+
+    & > div {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .wz-grid.cols3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wz-field.span3 { grid-column: span 2; }
+}

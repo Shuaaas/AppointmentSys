@@ -3,21 +3,33 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AddUserRequest;
+use App\Http\Requests\Admin\AssignRoleRequest;
+use App\Http\Requests\Admin\ResetPasswordRequest;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Services\User\UserService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index()
+    public function __construct(
+        private readonly UserService $userService
+    ) {}
+
+    /**
+     * List all active/non-pending users (excluding the current Admin).
+     * Policy: Admin only.
+     */
+    public function index(): View
     {
         $this->authorize('viewAny', User::class);
 
         $users = User::where('id', '!=', auth()->id())
-            ->where(function ($query) {
-                $query->where('is_active', true)
-                    ->orWhereNull('requested_role');
-            })
+            ->where(fn ($q) => $q->where('is_active', true)->orWhereNull('requested_role'))
             ->orderBy('name')
             ->paginate(20);
 
@@ -25,11 +37,10 @@ class UserController extends Controller
     }
 
     /**
-     * Show the "Add User" form. The Admin creates the account here; the role
-     * is assigned later from the Manage Users screen, so this form has no
-     * role field. The record is created immediately on submit.
+     * Show the "Add User" form.
+     * Policy: Admin only.
      */
-    public function create()
+    public function create(): View
     {
         $this->authorize('create', User::class);
 
@@ -37,109 +48,98 @@ class UserController extends Controller
     }
 
     /**
-     * Create a user account directly from the Admin "Add User" form.
-     * The account is stored right away (no approval step) and is activated
-     * immediately so the Admin does not need to activate it manually.
+     * Create a user account directly (active immediately, no approval step).
+     * Policy: Admin only.
      */
-    public function addUser(Request $request)
+    public function addUser(AddUserRequest $request): RedirectResponse
     {
         $this->authorize('create', User::class);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', 'min:8'],
-            'role' => ['required', 'in:hr,records,manager'],
-        ]);
-
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => $data['role'],
-            'requested_role' => null,
-            'is_active' => true,
-        ]);
+        $user = $this->userService->createDirect($request->validated());
 
         return redirect()
             ->route('admin.users.create')
-            ->with('success', $user->name . ' was successfully added as ' . $user->roleLabel() . '.');
+            ->with('success', "{$user->name} was successfully added as {$user->roleLabel()}.");
     }
 
-    public function store(Request $request)
+    /**
+     * Create a pending user account (requires Admin approval before login).
+     * Policy: Admin only.
+     */
+    public function store(StoreUserRequest $request): RedirectResponse
     {
         $this->authorize('create', User::class);
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', 'min:8'],
-            'role' => ['required', 'in:hr,records,manager,admin'],
-        ]);
 
-        User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => $data['role'],
-            'requested_role' => $data['role'],
-            'is_active' => false,
-        ]);
+        $this->userService->createPending($request->validated());
 
-        return redirect()->route('admin.users.index')->with('success', 'User created successfully and sent for approval.');
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User created successfully and sent for approval.');
     }
 
-    public function update(Request $request, User $user)
+    /**
+     * Update a user's name, email, and optionally password.
+     * Policy: Admin only.
+     */
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $this->authorize('update', $user);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'password' => ['nullable', 'confirmed', 'min:8'],
-        ]);
+        $this->userService->update($user, $request->validated());
 
-        $user->name = $data['name'];
-        $user->email = $data['email'];
-
-        if (! empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
-
-        $user->save();
-
-        return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User updated successfully.');
     }
 
-    public function assignRole(Request $request, User $user)
+    /**
+     * Assign a role to a user.
+     * Policy: Admin only.
+     */
+    public function assignRole(AssignRoleRequest $request, User $user): RedirectResponse
     {
         $this->authorize('assignRole', $user);
 
-        $data = $request->validate([
-            'role' => ['required', 'in:hr,records,manager,admin'],
-        ]);
+        $this->userService->assignRole($user, $request->validated()['role']);
 
-        $user->role = $data['role'];
-        $user->save();
-
-        return redirect()->route('admin.users.index')->with('success', 'User role updated successfully.');
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User role updated successfully.');
     }
 
-    public function activate(Request $request, User $user)
+    /**
+     * Activate a pending user account.
+     * Policy: Admin only.
+     */
+    public function activate(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
 
-        $update = ['is_active' => true, 'requested_role' => null];
+        $this->userService->activate($user);
 
-        if ($user->role === 'records' && $user->requested_role && $user->requested_role !== 'records') {
-            $update['role'] = $user->requested_role;
-        }
-
-        $user->update($update);
-
-        return redirect()->back()->with('success', 'User account activated successfully.');
+        return redirect()->back()
+            ->with('success', 'User account activated successfully.');
     }
 
-    public function destroy(Request $request, User $user)
+    /**
+     * Deactivate an active user account.
+     * Policy: Admin only (cannot deactivate own account).
+     */
+    public function deactivate(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('deactivate', $user);
+
+        $this->userService->deactivate($user);
+
+        return redirect()->back()
+            ->with('success', 'User account deactivated successfully.');
+    }
+
+    /**
+     * Delete a pending (inactive) user account.
+     * Policy: Admin only; only pending accounts may be deleted from this screen.
+     */
+    public function destroy(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()->isAdmin(), 403);
 
@@ -149,23 +149,16 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('success', 'Pending account deleted successfully.');
-    }
-
-    public function deactivate(Request $request, User $user)
-    {
-        $this->authorize('deactivate', $user);
-
-        $user->update(['is_active' => false]);
-
-        return redirect()->back()->with('success', 'User account deactivated successfully.');
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'Pending account deleted successfully.');
     }
 
     /**
-     * List all users so the Admin can reset a forgotten password.
-     * Policy: Admin only (route middleware + viewAny authorization).
+     * List all users for password reset.
+     * Policy: Admin only.
      */
-    public function passwords()
+    public function passwords(): View
     {
         $this->authorize('viewAny', User::class);
 
@@ -176,19 +169,13 @@ class UserController extends Controller
 
     /**
      * Reset another user's password without requiring their current one.
-     * Policy: Admin only (update authorization).
+     * Policy: Admin only.
      */
-    public function resetPassword(Request $request, User $user)
+    public function resetPassword(ResetPasswordRequest $request, User $user): RedirectResponse
     {
         $this->authorize('update', $user);
 
-        $data = $request->validate([
-            'password' => ['required', 'confirmed', 'min:8'],
-        ]);
-
-        $user->update([
-            'password' => Hash::make($data['password']),
-        ]);
+        $this->userService->resetPassword($user, $request->validated()['password']);
 
         return redirect()
             ->route('admin.passwords.index')
