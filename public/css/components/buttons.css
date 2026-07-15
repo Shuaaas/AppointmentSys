@@ -35,6 +35,14 @@
   &:hover { background: var(--accent-hover); }
 }
 
+.btn-blue {
+  background: var(--hr-primary, #003087);
+  color: #fff;
+  border-color: var(--hr-primary, #003087);
+
+  &:hover { background: var(--hr-primary-dark, #0a1a33); border-color: var(--hr-primary-dark, #0a1a33); }
+}
+
 .add-entry-btn {
   background: var(--hr-primary, #003087);
   border-color: var(--hr-primary, #003087);

@@ -241,7 +241,7 @@
                                         <a href="{{ route('appointments.downloadFinalDeliberation', $a) }}" class="btn btn-secondary btn-sm doc-download" data-no-loader data-appointment-id="{{ $a->id }}"><i class="ti ti-file-text" style="font-size:12px" aria-hidden="true"></i> Final Deliberation</a>
                                     </div>
                                     <div class="drop-right">
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="openViewSummary({{ $a->id }})"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i> View</button>
+                                        <button type="button" class="btn btn-blue btn-sm" onclick="openViewSummary({{ $a->id }})"><i class="ti ti-eye" style="font-size:12px" aria-hidden="true"></i> View</button>
                                         <button type="button" class="btn btn-success btn-sm" onclick="openEditWizard({{ $a->id }})"><i class="ti ti-edit" style="font-size:12px" aria-hidden="true"></i> Edit</button>
                                         <form action="{{ route('appointments.destroy', $a) }}" method="POST" onsubmit="return false;" id="delete-form-{{ $a->id }}">
                                             @csrf @method('DELETE')
@@ -288,6 +288,7 @@
 @push('modals')
     @include('appointments.partials.wizard-modal')
     @include('appointments.partials.delete-modal')
+    @include('appointments.partials.download-modal')
     @include('appointments.partials.view-modal')
 @endpush
 
@@ -746,7 +747,7 @@ function submitBulkDestroy(ids) {
 function submitBulkDownload() {
     const ids = getSelectedIds();
     if (!ids.length) {
-        alert('Please select at least one appointment to download.');
+        showDownloadModal('Please select at least one appointment to download.');
         return;
     }
 
@@ -776,7 +777,7 @@ function submitBulkDownload() {
             ids.forEach(id => refreshAppointmentStatus(id).catch(() => {}));
         })
         .catch(() => {
-            alert('Unable to download selected appointments. Please try again.');
+            showDownloadModal('Unable to download selected appointments. Please try again.');
         })
         .finally(() => {
             if (button) {
@@ -787,6 +788,13 @@ function submitBulkDownload() {
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showDownloadModal(msg, title) {
+    if (title) document.getElementById('download-modal-title').textContent = title;
+    else document.getElementById('download-modal-title').textContent = 'Download not available';
+    document.getElementById('download-modal-msg').textContent = msg;
+    document.getElementById('overlay-download').classList.add('show');
+}
 
 document.querySelectorAll('.overlay').forEach(ov => {
     ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(ov.id); });

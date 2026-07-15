@@ -127,8 +127,8 @@
     </main>
 </div>
 
-@stack('modals')
-@stack('scripts')
+<div id="hr-modals">@stack('modals')</div>
+<div id="hr-scripts">@stack('scripts')</div>
 <script>
 (function () {
     const sidebar = document.getElementById('hrSidebar');
@@ -200,21 +200,51 @@
     if (!fullscreenBtn) return;
 
     const icon = fullscreenBtn.querySelector('i');
+    const FS_KEY = 'hrFullscreenActive';
 
     function updateIcon() {
         if (!icon) return;
         icon.className = document.fullscreenElement ? 'ti ti-arrows-minimize' : 'ti ti-arrows-maximize';
     }
 
+    function setActive(on) {
+        try { localStorage.setItem(FS_KEY, on ? '1' : '0'); } catch (e) {}
+    }
+
+    function isActive() {
+        try { return localStorage.getItem(FS_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function requestFs() {
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen().catch(function () {});
+    }
+
     fullscreenBtn.addEventListener('click', function () {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(function () {});
+            requestFs();
+            setActive(true);
         } else {
             document.exitFullscreen();
+            setActive(false);
         }
     });
 
-    document.addEventListener('fullscreenchange', updateIcon);
+    // Keep fullscreen across page navigations until the user explicitly exits it.
+    function restore() {
+        if (document.fullscreenElement) return;
+        if (isActive()) requestFs();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restore);
+    } else {
+        restore();
+    }
+
+    document.addEventListener('fullscreenchange', function () {
+        if (!document.fullscreenElement) setActive(false);
+        updateIcon();
+    });
     updateIcon();
 })();
 
@@ -241,6 +271,137 @@
 
     update();
     setInterval(update, 1000);
+})();
+
+/* ── AJAX page navigation ─────────────────
+   Loads sidebar/header links without a full page reload so the
+   document (and its fullscreen state) stays alive until the user
+   explicitly exits fullscreen. Per-page scripts are re-injected and
+   re-initialised via a synthetic DOMContentLoaded. */
+(function () {
+    if (typeof window.axios === 'undefined') return;
+
+    function showNavLoader() {
+        const o = document.getElementById('deped-page-loader');
+        if (o) o.classList.add('is-active');
+    }
+
+    function hideNavLoader() {
+        const o = document.getElementById('deped-page-loader');
+        if (!o) return;
+        const bar = o.querySelector('.loader-progress-bar');
+        if (bar) { bar.style.transition = 'width 0.15s ease-out'; bar.style.width = '100%'; }
+        setTimeout(function () {
+            o.classList.remove('is-active');
+            if (bar) setTimeout(function () { bar.style.transition = ''; bar.style.width = ''; }, 150);
+        }, 140);
+    }
+
+    function pathOf(href) {
+        try { return new URL(href, window.location.href); }
+        catch (e) { return null; }
+    }
+
+    function isNavLink(link) {
+        if (!link || link.tagName !== 'A') return false;
+        if (link.hasAttribute('data-no-loader')) return false;
+        if (link.target && link.target !== '_self') return false;
+        if (link.hasAttribute('download')) return false;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') ||
+            href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+        const url = pathOf(link.href);
+        if (!url || url.origin !== window.location.origin) return false;
+        return true;
+    }
+
+    function setActiveNav(url) {
+        const u = pathOf(url);
+        if (!u) return;
+        const links = Array.from(document.querySelectorAll('.nav-link'));
+        let exact = false;
+        links.forEach(function (a) {
+            const ap = pathOf(a.href);
+            if (ap && ap.pathname === u.pathname) exact = true;
+        });
+        links.forEach(function (a) {
+            const ap = pathOf(a.href);
+            if (!ap) { a.classList.remove('active'); return; }
+            const isActive = exact
+                ? ap.pathname === u.pathname
+                : u.pathname === ap.pathname || u.pathname.startsWith(ap.pathname + '/');
+            a.classList.toggle('active', isActive);
+        });
+    }
+
+    function reinitScripts(doc) {
+        const cur = document.getElementById('hr-scripts');
+        const next = doc.getElementById('hr-scripts');
+        if (cur && next) {
+            cur.innerHTML = '';
+            next.querySelectorAll('script').forEach(function (old) {
+                const s = document.createElement('script');
+                if (old.src) s.src = old.src;
+                else s.textContent = old.textContent;
+                cur.appendChild(s);
+            });
+        }
+    }
+
+    let navToken = 0;
+
+    function loadPage(url, push) {
+        const token = ++navToken;
+        showNavLoader();
+
+        window.axios.get(url)
+            .then(function (res) {
+                if (token !== navToken) return; // a newer navigation superseded this one
+                const doc = new DOMParser().parseFromString(res.data, 'text/html');
+
+                const newMain = doc.querySelector('main.content') || doc.querySelector('main');
+                const curMain = document.querySelector('main.content') || document.querySelector('main');
+                if (newMain && curMain) curMain.innerHTML = newMain.innerHTML;
+
+                const newModals = doc.getElementById('hr-modals');
+                const curModals = document.getElementById('hr-modals');
+                if (newModals && curModals) curModals.innerHTML = newModals.innerHTML;
+
+                reinitScripts(doc);
+
+                document.title = doc.title;
+                const newTitle = doc.querySelector('.hr-page-title');
+                const curTitle = document.querySelector('.hr-page-title');
+                if (newTitle && curTitle) curTitle.textContent = newTitle.textContent;
+
+                setActiveNav(url);
+                if (push !== false) history.pushState({ url: url }, '', url);
+
+                // Re-run per-page initialisers that wait for DOMContentLoaded.
+                document.dispatchEvent(new Event('DOMContentLoaded'));
+            })
+            .catch(function () {
+                if (token === navToken) window.location.href = url; // fall back to full load
+            })
+            .finally(function () {
+                if (token === navToken) hideNavLoader();
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 ||
+            e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const link = e.target.closest('a');
+        if (!isNavLink(link)) return;
+        const url = pathOf(link.href);
+        if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+        e.preventDefault();
+        loadPage(link.href, true);
+    });
+
+    window.addEventListener('popstate', function () {
+        loadPage(window.location.href, false);
+    });
 })();
 </script>
 <script src="{{ asset('js/page-loader.js') }}"></script>

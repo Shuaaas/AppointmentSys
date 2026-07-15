@@ -100,6 +100,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (window.__depedLoaderReady) return;
+        window.__depedLoaderReady = true;
+
         buildOverlay();
 
         // Show loader when clicking any internal link

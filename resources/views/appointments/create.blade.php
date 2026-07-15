@@ -152,6 +152,22 @@
             </div>
         </div>
     </div>
+
+    <div class="overlay" id="wz-warning-overlay">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-head">
+                <span class="modal-title">Required fields missing</span>
+                <button type="button" class="modal-close" onclick="wzCloseWarning()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon"><i class="ti ti-alert-triangle" style="font-size:44px;color:var(--red)" aria-hidden="true"></i></div>
+                <p class="confirm-msg" id="wz-warning-msg"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-blue" onclick="wzCloseWarning()">OK</button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -241,11 +257,11 @@ function wzBuildReview() {
 
 function wzGoNext() {
     if (wzCurrent === 0 && (!document.getElementById('f-last').value || !document.getElementById('f-first').value)) {
-        alert('Please fill in the required fields (Last name, First name) before continuing.');
+        wzShowWarning('Please fill in the required fields (Last name, First name) before continuing.');
         return;
     }
     if (wzCurrent === 0 && (!document.getElementById('f-pos').value || !document.getElementById('f-estatus').value || !document.getElementById('f-nature').value)) {
-        alert('Please fill in the required fields (Position, Employment status, Appointment nature) before continuing.');
+        wzShowWarning('Please fill in the required fields (Position, Employment status, Appointment nature) before continuing.');
         return;
     }
     if (wzCurrent === WZ_TOTAL - 1) wzBuildReview();
@@ -286,6 +302,15 @@ function wzUpdateUI() {
 }
 
 wzUpdateUI();
+
+function wzShowWarning(msg) {
+    document.getElementById('wz-warning-msg').textContent = msg;
+    document.getElementById('wz-warning-overlay').classList.add('show');
+}
+
+function wzCloseWarning() {
+    document.getElementById('wz-warning-overlay').classList.remove('show');
+}
 
 function syncChecklist() {
     const shs = document.getElementById('f-shs');
@@ -329,6 +354,13 @@ document.addEventListener('DOMContentLoaded', function () {
     if (wzForm) {
         wzForm.addEventListener('input', syncReadonly);
         wzForm.addEventListener('change', syncReadonly);
+    }
+
+    const wzWarningOverlay = document.getElementById('wz-warning-overlay');
+    if (wzWarningOverlay) {
+        wzWarningOverlay.addEventListener('click', function (e) {
+            if (e.target === wzWarningOverlay) wzCloseWarning();
+        });
     }
 
     syncChecklist();
