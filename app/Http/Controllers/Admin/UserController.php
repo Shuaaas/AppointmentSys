@@ -24,16 +24,56 @@ class UserController extends Controller
      * List all active/non-pending users (excluding the current Admin).
      * Policy: Admin only.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::where('id', '!=', auth()->id())
-            ->where(fn ($q) => $q->where('is_active', true)->orWhereNull('requested_role'))
-            ->orderBy('name')
-            ->paginate(20);
+        $search = $request->query('q');
+        $role   = $request->query('role');
+        $status = $request->query('status');
+        $tab    = $request->query('tab', 'all');
 
-        return view('admin.users.index', compact('users'));
+        $query = User::where('id', '!=', auth()->id());
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($role) {
+            $query->where('role', $role);
+        }
+
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        if ($tab === 'active') {
+            $query->where('is_active', true);
+        } elseif ($tab === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        $users = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        $allCount     = User::where('id', '!=', auth()->id())->count();
+        $activeCount  = User::where('id', '!=', auth()->id())->where('is_active', true)->count();
+        $inactiveCount = User::where('id', '!=', auth()->id())->where('is_active', false)->count();
+
+        return view('admin.users.index', [
+            'users'        => $users,
+            'search'       => $search,
+            'role'         => $role,
+            'status'       => $status,
+            'tab'          => $tab,
+            'allCount'     => $allCount,
+            'activeCount'  => $activeCount,
+            'inactiveCount'=> $inactiveCount,
+        ]);
     }
 
     /**
@@ -158,13 +198,33 @@ class UserController extends Controller
      * List all users for password reset.
      * Policy: Admin only.
      */
-    public function passwords(): View
+    public function passwords(Request $request): View
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::orderBy('name')->get();
+        $search = $request->query('q');
+        $role   = $request->query('role');
 
-        return view('admin.passwords.index', compact('users'));
+        $query = User::query();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($role) {
+            $query->where('role', $role);
+        }
+
+        $users = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        return view('admin.passwords.index', [
+            'users'  => $users,
+            'search' => $search,
+            'role'   => $role,
+        ]);
     }
 
     /**

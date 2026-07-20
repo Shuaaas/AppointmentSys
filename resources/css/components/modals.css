@@ -238,10 +238,64 @@
   }
 }
 
-/* ── Responsive ──────────────────────── */
-@media (max-width: 600px) {
-  .info-grid     { grid-template-columns: 1fr; }
-  .info-full     { grid-column: span 1; }
-  .section-sep,
-  .section-head  { grid-column: span 1; }
+/* ── Print confirm list (Print selected modal) ──── */
+.print-confirm-list {
+  list-style: none;
+  margin: 0.875rem 0 0;
+  padding: 0;
+  max-height: 45vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+}
+
+.print-confirm-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+}
+
+.print-confirm-list li:last-child { border-bottom: none; }
+
+.print-confirm-list .pc-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.print-confirm-list .pc-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Selected row highlight (bulk actions) ──── */
+tr.data-row.selected-row > td {
+  background: var(--accent-light, #eef4fb);
+}
+
+/* ── Toast / snackbar ──────────────────── */
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%) translateY(1rem);
+  background: var(--text-primary, #1f2933);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.75rem 1.125rem;
+  border-radius: var(--radius-pill, 999px);
+  box-shadow: var(--shadow-md, 0 8px 20px rgba(0, 0, 0, .18));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+  z-index: 400;
+  max-width: 90vw;
+}
+
+.app-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

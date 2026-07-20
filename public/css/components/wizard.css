@@ -21,7 +21,7 @@
   }
 
   & .card-body {
-    padding: 1.25rem 0;
+    padding: 0.75rem 0;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -34,7 +34,21 @@
   flex-direction: column;
 }
 
-.wizard-modal { max-width: 41.25rem; }
+.wizard-modal { max-width: 41.25rem; overflow: visible; }
+
+/* Modal wizard step dots use the system's main blue (HR primary) */
+.wizard-modal {
+  overflow: visible;
+
+  & .modal-body { overflow: visible; }
+  & .wz-step-dot.active .wz-dot {
+    background: var(--hr-primary, #003087);
+    border-color: var(--hr-primary, #003087);
+    color: #fff;
+  }
+
+  & .wz-step-dot.active .wz-dot-label { color: var(--hr-primary, #003087); }
+}
 
 /* ── Step panels ─────────────────────── */
 .step-panel {
@@ -52,7 +66,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0;
-  margin-bottom: 1.375rem;
+  margin-bottom: 0.75rem;
 }
 
 .wz-step-dot {
@@ -162,6 +176,20 @@
   gap: 0.875rem 1.125rem;
 
   &.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── Two fields sharing one grid cell (e.g. Salary grade + Step) ── */
+.wz-field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+
+  & .wz-field { min-width: 0; }
+
+  & .wz-field + .wz-field {
+    padding-left: 0.75rem;
+    margin-left: 0.75rem;
+  }
 }
 
 .wz-grid-note {
@@ -323,7 +351,7 @@
    larger "New Appointment" page layout.
 ════════════════════════════════════════ */
 .wizard-page {
-  & .wz-progress { margin-bottom: 2rem; }
+  & .wz-progress { margin-bottom: 1rem; }
 
   & .wz-step-dot { gap: 0; }
 
@@ -416,7 +444,7 @@
     }
   }
 
-  & .wz-footer        { margin-top: 1.625rem; padding-top: 1.25rem; }
+  & .wz-footer        { margin-top: 0.75rem; padding-top: 0.75rem; }
   & .wz-counter       { font-size: 0.8125rem; }
   & .review-grid      { gap: 1.25rem; }
   & .review-row       { padding: 0.5rem 0; }
@@ -468,4 +496,15 @@
   }
 
   .wz-field.span3 { grid-column: span 2; }
+
+  .wz-field-pair {
+    grid-template-columns: 1fr;
+    gap: 0.875rem 0;
+
+    & .wz-field + .wz-field {
+      border-left: none;
+      padding-left: 0;
+      margin-left: 0;
+    }
+  }
 }

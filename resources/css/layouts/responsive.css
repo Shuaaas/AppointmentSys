@@ -36,6 +36,11 @@
   /* ── Header ─────────────────────────── */
   .hr-header {
     padding: 0 var(--space-6);
+    left: 0;
+  }
+
+  .topbar {
+    left: 0;
   }
 
   /* Hide the centred datetime on tablet — it overlaps menu buttons */

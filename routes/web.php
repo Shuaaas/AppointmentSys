@@ -5,6 +5,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\PlantillaItemController;
 use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Support\Facades\Route;
 
@@ -54,11 +55,15 @@ Route::middleware('auth')->group(function () {
             Route::put('/{appointment}', [AppointmentController::class, 'update'])->name('update');
             Route::post('/{appointment}/conclude', [AppointmentController::class, 'conclude'])->name('conclude');
 
+            Route::get('/plantilla-search', [PlantillaItemController::class, 'search'])->name('plantilla.search');
+            Route::get('/salary', [PlantillaItemController::class, 'salary'])->name('salary');
+
             Route::get('/{appointment}/export-afa', [AppointmentController::class, 'exportAfa'])->name('exportAfa');
             Route::get('/{appointment}/checklist/download', [AppointmentController::class, 'downloadChecklist'])->name('downloadChecklist');
             Route::get('/{appointment}/rai/download', [AppointmentController::class, 'downloadRai'])->name('downloadRai');
             Route::get('/{appointment}/final-deliberation/download', [AppointmentController::class, 'downloadFinalDeliberation'])->name('downloadFinalDeliberation');
             Route::match(['get', 'post'], '/export/csv', [AppointmentController::class, 'exportCsv'])->name('export');
+            Route::post('/print', [AppointmentController::class, 'print'])->name('print');
         });
 
         // Records only: the single narrow field edit.

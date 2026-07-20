@@ -6,17 +6,6 @@
     <div class="page-panel">
         <div class="card">
             <div class="card-body">
-                @if ($errors->any())
-                    <div class="alert alert-error" role="alert">
-                        <strong>Please correct the following:</strong>
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
                 <form id="wizard-form" class="wizard-page" method="POST" action="{{ route('appointments.store') }}">
                     @csrf
                     <input type="hidden" name="_method" value="POST">
@@ -37,28 +26,40 @@
                             <div class="wz-field"><label>Middle name</label><input type="text" name="middle_name" id="f-middle" class="alpha-only" placeholder="Optional" value="{{ old('middle_name') }}"></div>
 
                             <div class="wz-field"><label>Extension name</label><input type="text" name="extension_name" id="f-ext" class="alpha-only" placeholder="Jr., Sr., III" value="{{ old('extension_name') }}"></div>
-                            <div class="wz-field span2"><label>Position <span class="req">*</span></label><input type="text" name="position_title" id="f-pos" placeholder="e.g. Teacher III" value="{{ old('position_title') }}" required></div>
+                            <div class="wz-field span2" style="position:relative"><label>Position <span class="req">*</span></label><input type="text" name="position_title" id="f-pos" placeholder="e.g. Teacher III" value="{{ old('position_title') }}" required autocomplete="off"><div id="position-dropdown" class="plantilla-dropdown" style="display:none"></div></div>
 
-                            <div class="wz-field"><label>Salary grade</label>
-                                <select name="salary_grade" id="f-sg">
-                                    <option value="">Select grade</option>
-                                    @for ($i = 1; $i <= 20; $i++)<option value="SG-{{ $i }}" {{ old('salary_grade') === "SG-{$i}" ? 'selected' : '' }}>SG-{{ $i }}</option>@endfor
-                                </select>
+                            <div class="wz-field-pair">
+                                <div class="wz-field"><label>Salary grade</label>
+                                    <select name="salary_grade" id="f-sg">
+                                        <option value="">Select grade</option>
+                                        @for ($i = 1; $i <= 20; $i++)<option value="SG-{{ $i }}" {{ old('salary_grade') === "SG-{$i}" ? 'selected' : '' }}>SG-{{ $i }}</option>@endfor
+                                    </select>
+                                </div>
+                                <div class="wz-field"><label>Step</label>
+                                    <select name="salary_grade_step" id="f-step">
+                                        <option value="">Select step</option>
+                                        @for ($i = 1; $i <= 8; $i++)<option value="Step {{ $i }}" {{ old('salary_grade_step') === "Step {$i}" ? 'selected' : '' }}>Step {{ $i }}</option>@endfor
+                                    </select>
+                                </div>
                             </div>
                             <div class="wz-field"><label>Employment status <span class="req">*</span></label>
                                 <select name="employee_status" id="f-estatus" required>
                                     <option value="">Select</option><option value="Permanent" {{ old('employee_status') === 'Permanent' ? 'selected' : '' }}>Permanent</option><option value="Substitute" {{ old('employee_status') === 'Substitute' ? 'selected' : '' }}>Substitute</option><option value="Provisional" {{ old('employee_status') === 'Provisional' ? 'selected' : '' }}>Provisional</option>
                                 </select>
                             </div>
-                            <div class="wz-field"><label>District</label><input type="text" name="school_district" id="f-school" placeholder="e.g. Batangas NHS" value="{{ old('school_district') }}"></div>
+                            <div class="wz-field" style="position:relative"><label>District</label><input type="text" name="school_district" id="f-school" placeholder="e.g. Batangas NHS" value="{{ old('school_district') }}" autocomplete="off"><div id="district-dropdown" class="plantilla-dropdown" style="display:none"></div></div>
 
-                            <div class="wz-field"><label>School</label><input type="text" name="school" id="f-school-new" placeholder="e.g. Batangas National High School" value="{{ old('school') }}"></div>
-                            <div class="wz-field"><label>Plantilla number</label><input type="text" name="plantilla_item_number" id="f-plantilla-item" placeholder="e.g. OSEC-DECSB-T3-123456" value="{{ old('plantilla_item_number') }}"></div>
+                            <div class="wz-field" style="position:relative"><label>School</label><input type="text" name="school" id="f-school-new" placeholder="e.g. Batangas National High School" value="{{ old('school') }}" autocomplete="off"><div id="school-dropdown" class="plantilla-dropdown" style="display:none"></div></div>
+                            <div class="wz-field" style="position:relative">
+                                <label>Plantilla number</label>
+                                <input type="text" name="plantilla_item_number" id="f-plantilla-item" placeholder="e.g. OSEC-DECSB-T3-123456" value="{{ old('plantilla_item_number') }}" autocomplete="off">
+                                <div id="plantilla-dropdown" class="plantilla-dropdown" style="display:none"></div>
+                            </div>
                             <div class="wz-field"><label>Page number</label><input type="text" name="plantilla_page_number" id="f-plantilla-page" placeholder="e.g. 12" value="{{ old('plantilla_page_number') }}"></div>
 
-                            <div class="wz-field span3"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos" value="{{ old('compensation_words') }}"></div>
+                            <div class="wz-field span3"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos" value="{{ old('compensation_words') }}" readonly></div>
 
-                            <div class="wz-field span2"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00" value="{{ old('compensation_numbers') }}"></div>
+                            <div class="wz-field span2"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00" value="{{ old('compensation_numbers') }}" readonly></div>
                             <div class="wz-field"><label>Nature of Appointment <span class="req">*</span></label>
                                 <select name="nature_of_appointment" id="f-nature" required>
                                     <option value="">Select</option><option value="Original" {{ old('nature_of_appointment') === 'Original' ? 'selected' : '' }}>Original</option><option value="Promotion" {{ old('nature_of_appointment') === 'Promotion' ? 'selected' : '' }}>Promotion</option><option value="Demotion" {{ old('nature_of_appointment') === 'Demotion' ? 'selected' : '' }}>Demotion</option><option value="Transfer" {{ old('nature_of_appointment') === 'Transfer' ? 'selected' : '' }}>Transfer</option><option value="Re-Classification" {{ old('nature_of_appointment') === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option><option value="Re-Employment" {{ old('nature_of_appointment') === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option><option value="Re-Appointment" {{ old('nature_of_appointment') === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
@@ -169,6 +170,41 @@
         </div>
     </div>
 @endsection
+
+<style>
+.plantilla-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+.plantilla-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+}
+.plantilla-item:hover, .plantilla-item.active {
+    background: var(--accent-light);
+}
+.plantilla-item .pi-main {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+.plantilla-item .pi-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+</style>
 
 @push('scripts')
 <script>
@@ -328,7 +364,6 @@ function syncFinalDeliberation() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
     // Names: letters, spaces, periods, apostrophes and hyphens only
     document.querySelectorAll('.alpha-only').forEach(function (el) {
         el.addEventListener('input', function () {
@@ -366,6 +401,134 @@ document.addEventListener('DOMContentLoaded', function () {
     syncChecklist();
     syncFinalDeliberation();
     syncReadonly();
-});
+
+    const plantillaSearchUrl = '{{ route('appointments.plantilla.search') }}';
+
+    function setupAutocomplete(config) {
+        const input = document.getElementById(config.inputId);
+        const dropdown = document.getElementById(config.dropdownId);
+        if (!input || !dropdown) return;
+
+        const fillRelated = config.fillRelated !== false;
+        const showSubtitle = config.showSubtitle !== false;
+
+        let debounce;
+
+        input.addEventListener('input', function () {
+            const term = input.value.trim();
+            clearTimeout(debounce);
+
+            if (term.length < 2) {
+                dropdown.style.display = 'none';
+                dropdown.innerHTML = '';
+                return;
+            }
+
+            debounce = setTimeout(function () {
+                fetch(plantillaSearchUrl + '?q=' + encodeURIComponent(term) + '&field=' + config.field)
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (!data.length) {
+                            dropdown.style.display = 'none';
+                            dropdown.innerHTML = '';
+                            return;
+                        }
+
+                        dropdown.innerHTML = data.map(function (item) {
+                            const main = item[config.field] || '—';
+                            const sub = showSubtitle
+                                ? [item.position, item.school_name, item.city_municipality].filter(Boolean).join(' — ') || '—'
+                                : '';
+                            return '<div class="plantilla-item" data-data="' + (item.data || '') + '" data-position="' + (item.position || '') + '" data-school_name="' + (item.school_name || '') + '" data-city_municipality="' + (item.city_municipality || '') + '">' +
+                                '<div class="pi-main">' + main + '</div>' +
+                                (showSubtitle ? '<div class="pi-sub">' + sub + '</div>' : '') +
+                                '</div>';
+                        }).join('');
+
+                        dropdown.style.display = 'block';
+
+                        dropdown.querySelectorAll('.plantilla-item').forEach(function (el) {
+                            el.addEventListener('click', function () {
+                                const pos = document.getElementById('f-pos');
+                                const school = document.getElementById('f-school-new');
+                                const district = document.getElementById('f-school');
+                                const plantilla = document.getElementById('f-plantilla-item');
+
+                                if (fillRelated) {
+                                    const targets = config.fillTargets || ['pos', 'school', 'district', 'plantilla'];
+                                    if (targets.includes('pos') && config.inputId !== 'f-pos' && pos && el.dataset.position) pos.value = el.dataset.position;
+                                    if (targets.includes('school') && config.inputId !== 'f-school-new' && school && el.dataset.school_name) school.value = el.dataset.school_name;
+                                    if (targets.includes('district') && config.inputId !== 'f-school' && district && el.dataset.city_municipality) district.value = el.dataset.city_municipality;
+                                    if (targets.includes('plantilla') && config.inputId !== 'f-plantilla-item' && plantilla && el.dataset.item) plantilla.value = el.dataset.item;
+                                }
+
+                                input.value = el.dataset[config.field] || '';
+                                dropdown.style.display = 'none';
+                                dropdown.innerHTML = '';
+                                syncReadonly();
+                            });
+                        });
+                    })
+                    .catch(function () {
+                        dropdown.style.display = 'none';
+                        dropdown.innerHTML = '';
+                    });
+            }, 300);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    }
+
+    setupAutocomplete({ inputId: 'f-pos', dropdownId: 'position-dropdown', field: 'position', fillRelated: false, showSubtitle: false });
+    setupAutocomplete({ inputId: 'f-school', dropdownId: 'district-dropdown', field: 'city_municipality', fillTargets: ['school'] });
+    setupAutocomplete({ inputId: 'f-school-new', dropdownId: 'school-dropdown', field: 'school_name', fillTargets: ['district'] });
+    setupAutocomplete({ inputId: 'f-plantilla-item', dropdownId: 'plantilla-dropdown', field: 'data', fillRelated: false, showSubtitle: false });
+
+    const salaryUrl = '{{ route('appointments.salary') }}';
+    const sgSelect = document.getElementById('f-sg');
+    const stepSelect = document.getElementById('f-step');
+    const salWords = document.getElementById('f-salwords');
+    const salNums = document.getElementById('f-salnums');
+
+    function updateSalary() {
+        if (!sgSelect || !stepSelect || !salWords || !salNums) return;
+
+        const grade = sgSelect.value;
+        const step = stepSelect.value;
+
+        if (grade && step) {
+            fetch(salaryUrl + '?grade=' + encodeURIComponent(grade) + '&step=' + encodeURIComponent(step), { cache: 'no-store' })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.amount) {
+                        salNums.value = data.amount;
+                        salWords.value = data.words;
+                    } else {
+                        salNums.value = '';
+                        salWords.value = '';
+                    }
+                })
+                .catch(function () {
+                    salNums.value = '';
+                    salWords.value = '';
+                });
+        } else {
+            salNums.value = '';
+            salWords.value = '';
+        }
+    }
+
+    if (sgSelect && stepSelect) {
+        sgSelect.addEventListener('change', updateSalary);
+        stepSelect.addEventListener('change', updateSalary);
+    }
+
+    @if ($errors->any())
+        wzShowWarning(@json($errors->first()));
+    @endif
 </script>
 @endpush

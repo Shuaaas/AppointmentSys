@@ -19,8 +19,8 @@
             <label for="history-to">To</label>
             <input type="date" id="history-to" name="to" value="{{ $to }}">
         </div>
-        <button type="submit" class="btn btn-secondary">Filter</button>
-        <a href="{{ route('history.index') }}" class="btn btn-secondary" style="margin-left:8px">Clear</a>
+        <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+        <a href="{{ route('history.index') }}" class="btn btn-sm btn-secondary" style="margin-left:8px">Clear</a>
     </form>
 </div>
 
@@ -94,6 +94,18 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+    <div class="footer-bar">
+        <span>
+            @if ($history->total() > 0)
+                Showing {{ $history->firstItem() }}–{{ $history->lastItem() }} of {{ $history->total() }} result{{ $history->total() !== 1 ? 's' : '' }}
+            @else
+                No results found.
+            @endif
+        </span>
+        <div class="pagination-links">
+            {{ $history->withQueryString()->links() }}
+        </div>
     </div>
 </div>
 @endsection

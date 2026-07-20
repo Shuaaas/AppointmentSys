@@ -251,15 +251,26 @@ class AppointmentController extends Controller
     /**
      * Archive — lists records that have reached the "Completed" status.
      */
-    public function archive(): View
+    public function archive(Request $request): View
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $appointments = Appointment::where('record_state', 'completed')
-            ->orderByDesc('updated_at')
-            ->get();
+        $from = $request->query('from');
+        $to   = $request->query('to');
 
-        return view('appointments.archive', compact('appointments'));
+        $appointments = Appointment::where('record_state', 'completed')
+            ->historyBetween($from, $to)
+            ->search($request->query('q'))
+            ->orderByDesc('updated_at')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('appointments.archive', [
+            'appointments' => $appointments,
+            'from'         => $from,
+            'to'           => $to,
+            'search'       => $request->query('q'),
+        ]);
     }
 
     /**
@@ -411,6 +422,30 @@ class AppointmentController extends Controller
         }
 
         return $this->streamCsvExport();
+    }
+
+    /**
+     * Render a print-friendly view for the selected appointment records.
+     * The actual browser print dialog is triggered from the returned view.
+     * Policy: HR only (same guard as the other document/export routes).
+     */
+    public function print(Request $request): View
+    {
+        abort_unless($request->user()->isHr(), 403, 'Only HR can print appointment records.');
+
+        $ids = $request->input('ids', []);
+        if (! is_array($ids)) {
+            $ids = [];
+        }
+
+        $appointments = Appointment::whereIn('id', $ids)
+            ->orderByDesc('encoded_at')
+            ->get();
+
+        return view('appointments.print', [
+            'appointments' => $appointments,
+            'generatedAt'  => now(),
+        ]);
     }
 
     /**

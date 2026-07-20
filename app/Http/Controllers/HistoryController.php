@@ -21,7 +21,8 @@ class HistoryController extends Controller
             ->historyBetween($from, $to)
             ->search($request->query('q'))
             ->orderByDesc('encoded_at')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return view('history.index', [
             'history' => $history,

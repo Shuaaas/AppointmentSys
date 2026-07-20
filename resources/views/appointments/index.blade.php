@@ -36,50 +36,54 @@
 @endif
 
 <div class="action-bar">
-    <form class="search-wrap" method="GET" action="{{ route('appointments.index') }}">
-        <i class="ti ti-search" aria-hidden="true"></i>
-        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…"
-               onchange="this.form.submit()">
-        <select name="nature" onchange="this.form.submit()" aria-label="Filter by appointment nature">
-            <option value="">All natures</option>
-            <option value="Original" {{ $selectedNature === 'Original' ? 'selected' : '' }}>Original</option>
-            <option value="Promotion" {{ $selectedNature === 'Promotion' ? 'selected' : '' }}>Promotion</option>
-            <option value="Demotion" {{ $selectedNature === 'Demotion' ? 'selected' : '' }}>Demotion</option>
-            <option value="Transfer" {{ $selectedNature === 'Transfer' ? 'selected' : '' }}>Transfer</option>
-            <option value="Re-Classification" {{ $selectedNature === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option>
-            <option value="Re-Employment" {{ $selectedNature === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option>
-            <option value="Re-Appointment" {{ $selectedNature === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
-        </select>
-        <input type="hidden" name="date" value="{{ $selectedDate }}">
-        <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
-        <input type="hidden" name="tab" value="{{ $selectedTab }}">
-    </form>
+    <div class="toolbar-search-group">
+        <form class="search-wrap" method="GET" action="{{ route('appointments.index') }}">
+            <i class="ti ti-search" aria-hidden="true"></i>
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…"
+                   onchange="this.form.submit()">
+            <select name="nature" onchange="this.form.submit()" aria-label="Filter by appointment nature">
+                <option value="">All natures</option>
+                <option value="Original" {{ $selectedNature === 'Original' ? 'selected' : '' }}>Original</option>
+                <option value="Promotion" {{ $selectedNature === 'Promotion' ? 'selected' : '' }}>Promotion</option>
+                <option value="Demotion" {{ $selectedNature === 'Demotion' ? 'selected' : '' }}>Demotion</option>
+                <option value="Transfer" {{ $selectedNature === 'Transfer' ? 'selected' : '' }}>Transfer</option>
+                <option value="Re-Classification" {{ $selectedNature === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option>
+                <option value="Re-Employment" {{ $selectedNature === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option>
+                <option value="Re-Appointment" {{ $selectedNature === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
+            </select>
+            <input type="hidden" name="date" value="{{ $selectedDate }}">
+            <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
+            <input type="hidden" name="tab" value="{{ $selectedTab }}">
+        </form>
 
-    <form class="date-control" method="GET" action="{{ route('appointments.index') }}">
-        <input type="hidden" name="tab" value="{{ $selectedTab }}">
-        <i class="ti ti-calendar" aria-hidden="true"></i>
-        <label for="appt-date-select">Date encoded</label>
-        <select id="appt-date-select" name="date" onchange="this.form.submit()">
-            @forelse ($availableDates as $i => $date)
-                <option value="{{ $date }}" {{ $date === $selectedDate ? 'selected' : '' }}>
-                    {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}{{ $i === 0 ? ' (latest)' : '' }}
-                </option>
-            @empty
-                <option value="">No dates available</option>
-            @endforelse
-        </select>
-        <input type="hidden" name="q" value="{{ $search }}">
-        <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
-        <input type="hidden" name="nature" value="{{ $selectedNature ?? '' }}">
-    </form>
-
+        <form class="date-control" method="GET" action="{{ route('appointments.index') }}">
+            <input type="hidden" name="tab" value="{{ $selectedTab }}">
+            <i class="ti ti-calendar" aria-hidden="true"></i>
+            <label for="appt-date-select">Date encoded</label>
+            <select id="appt-date-select" name="date" onchange="this.form.submit()">
+                @forelse ($availableDates as $i => $date)
+                    <option value="{{ $date }}" {{ $date === $selectedDate ? 'selected' : '' }}>
+                        {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}{{ $i === 0 ? ' (latest)' : '' }}
+                    </option>
+                @empty
+                    <option value="">No dates available</option>
+                @endforelse
+            </select>
+            <input type="hidden" name="q" value="{{ $search }}">
+            <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
+            <input type="hidden" name="nature" value="{{ $selectedNature ?? '' }}">
+        </form>
+    </div>
     @if(!auth()->user()?->isRecords() && !auth()->user()?->isManager())
         <div class="action-bar-right">
             <!-- <a href="{{ route('appointments.export') }}" class="btn btn-secondary">
                 <i class="ti ti-download" aria-hidden="true"></i> Export CSV
             </a> -->
             <button type="button" class="btn btn-secondary" id="bulk-download-btn" onclick="submitBulkDownload()">
-                <i class="ti ti-zip" aria-hidden="true"></i> Download Selected (ZIP)
+                <i class="ti ti-zip" aria-hidden="true"></i> <span class="download-label">Download ZIP</span>
+            </button>
+            <button type="button" class="btn btn-print" id="bulk-print-btn" onclick="openPrintModal()" disabled>
+                <i class="ti ti-printer" aria-hidden="true"></i> <span class="print-label">Print selected</span>
             </button>
             <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
                 <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
@@ -290,6 +294,7 @@
     @include('appointments.partials.delete-modal')
     @include('appointments.partials.download-modal')
     @include('appointments.partials.view-modal')
+    @include('appointments.partials.print-modal')
 @endpush
 
 @push('scripts')
@@ -418,6 +423,7 @@ function populateWizardForm(data) {
     setValue('f-strand', data.senior_high_strand);
     setValue('f-nonteaching', data.non_teaching);
 
+    if (typeof syncReadonly === 'function') syncReadonly();
     if (typeof syncChecklist === 'function') syncChecklist();
     if (typeof syncFinalDeliberation === 'function') syncFinalDeliberation();
 }
@@ -485,6 +491,7 @@ function buildAppointmentSummary(data) {
         ['Full name', employeeName],
         ['Position', data.position_title],
         ['Salary grade', data.salary_grade],
+        ['Step', data.salary_grade_step],
         ['Employee status', data.employee_status],
         ['District', data.school_district],
         ['School', data.school],
@@ -787,6 +794,87 @@ function submitBulkDownload() {
         });
 }
 
+function openPrintModal() {
+    const selected = getSelectedIds();
+    if (!selected.length) {
+        alert('Please select at least one appointment first.');
+        return;
+    }
+
+    const list = document.getElementById('print-confirm-list');
+    const countEl = document.getElementById('print-count');
+    if (!list || !countEl) return;
+
+    countEl.textContent = selected.length;
+
+    list.innerHTML = selected.map(id => {
+        const row = document.getElementById('row-' + id);
+        const nameEl = row ? row.querySelector('.name-text') : null;
+        const schoolEl = row ? row.children[3] : null;
+        const natureEl = row ? row.children[4] : null;
+        const name = nameEl ? nameEl.textContent.trim() : ('Record #' + id);
+        const school = schoolEl ? schoolEl.textContent.trim() : '';
+        const nature = natureEl ? natureEl.textContent.trim() : '';
+        return `<li><span class="pc-name">${escapeHtml(name)}</span>` +
+               `<span class="pc-detail">${escapeHtml(school)}${school && nature ? ' · ' : ''}${escapeHtml(nature)}</span></li>`;
+    }).join('');
+
+    document.getElementById('overlay-print').classList.add('show');
+}
+
+function printSelectedRecords() {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+
+    const button = document.getElementById('bulk-print-btn');
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('appointments.print') }}';
+    form.target = '_blank';
+    form.style.display = 'none';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = token;
+    form.appendChild(csrf);
+
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'ids[]';
+        input.value = id;
+        form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+
+    closeModal('overlay-print');
+    showToast(`Sent ${ids.length} record${ids.length !== 1 ? 's' : ''} to printer.`);
+}
+
+let toastTimer = null;
+function showToast(message) {
+    let toast = document.getElementById('app-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.className = 'app-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.add('show');
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
 function showDownloadModal(msg, title) {
@@ -804,15 +892,53 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectAll = document.getElementById('select-all');
     const rows = document.querySelectorAll('.select-row');
     const bulkTrashBtn = document.getElementById('bulk-trash-btn');
+    const bulkPrintBtn = document.getElementById('bulk-print-btn');
+    const bulkDownloadBtn = document.getElementById('bulk-download-btn');
 
     const updateBulkButton = () => {
         const selected = getSelectedIds();
-        bulkTrashBtn.disabled = selected.length === 0;
+        const hasSelection = selected.length > 0;
+
+        if (bulkTrashBtn) {
+            bulkTrashBtn.disabled = !hasSelection;
+        }
+        if (bulkPrintBtn) {
+            bulkPrintBtn.disabled = !hasSelection;
+            const label = bulkPrintBtn.querySelector('.print-label');
+            if (label) {
+                label.textContent = hasSelection
+                    ? `Print selected (${selected.length})`
+                    : 'Print selected';
+            }
+        }
+        if (bulkDownloadBtn) {
+            const label = bulkDownloadBtn.querySelector('.download-label');
+            if (label) {
+                label.textContent = hasSelection
+                    ? `Download ZIP (${selected.length})`
+                    : 'Download ZIP';
+            }
+        }
+
+        if (selectAll) {
+            const total = rows.length;
+            selectAll.checked = hasSelection && selected.length === total;
+            selectAll.indeterminate = hasSelection && selected.length < total;
+        }
+    };
+
+    const syncRowHighlight = () => {
+        rows.forEach(row => {
+            const tr = row.closest('tr.data-row');
+            if (!tr) return;
+            tr.classList.toggle('selected-row', row.checked);
+        });
     };
 
     if (selectAll) {
         selectAll.addEventListener('change', function () {
             rows.forEach(row => { row.checked = this.checked; });
+            syncRowHighlight();
             updateBulkButton();
         });
     }
@@ -822,9 +948,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!this.checked && selectAll) {
                 selectAll.checked = false;
             }
+            syncRowHighlight();
             updateBulkButton();
         });
     });
+
+    syncRowHighlight();
+    updateBulkButton();
 
     document.querySelectorAll('.doc-download').forEach(link => {
         link.addEventListener('click', function (event) {

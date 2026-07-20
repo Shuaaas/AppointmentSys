@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Traits\ConvertsNumbersToWords;
 use App\Models\Appointment;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -12,6 +13,7 @@ use RuntimeException;
 
 class AppointmentFormService
 {
+    use ConvertsNumbersToWords;
     /**
      * Generate the main Appointment Form (.docx) for the given appointment.
      */
@@ -415,7 +417,7 @@ class AppointmentFormService
             return '';
         }
 
-        return $this->numberToWords((int) $salary) . ' pesos';
+        return mb_strtoupper($this->numberToWords((int) $salary) . ' pesos', 'UTF-8');
     }
 
     private function money(mixed $value): string
@@ -436,53 +438,5 @@ class AppointmentFormService
         return $value instanceof \DateTimeInterface
             ? $value->format('F j, Y')
             : date('F j, Y', strtotime((string) $value));
-    }
-
-    private function numberToWords(int $number): string
-    {
-        if ($number === 0) {
-            return 'zero';
-        }
-
-        $units = [
-            0 => '', 1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four',
-            5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine',
-            10 => 'ten', 11 => 'eleven', 12 => 'twelve', 13 => 'thirteen',
-            14 => 'fourteen', 15 => 'fifteen', 16 => 'sixteen',
-            17 => 'seventeen', 18 => 'eighteen', 19 => 'nineteen',
-        ];
-
-        $tens = [
-            2 => 'twenty', 3 => 'thirty', 4 => 'forty', 5 => 'fifty',
-            6 => 'sixty', 7 => 'seventy', 8 => 'eighty', 9 => 'ninety',
-        ];
-
-        $scales = [
-            1000000000 => 'billion',
-            1000000 => 'million',
-            1000 => 'thousand',
-            100 => 'hundred',
-        ];
-
-        foreach ($scales as $scale => $label) {
-            if ($number >= $scale) {
-                $whole = intdiv($number, $scale);
-                $remainder = $number % $scale;
-                $words = $this->numberToWords($whole) . ' ' . $label;
-
-                return $remainder > 0
-                    ? $words . ' ' . $this->numberToWords($remainder)
-                    : $words;
-            }
-        }
-
-        if ($number < 20) {
-            return $units[$number];
-        }
-
-        $whole = intdiv($number, 10);
-        $remainder = $number % 10;
-
-        return trim($tens[$whole] . ' ' . $units[$remainder]);
     }
 }

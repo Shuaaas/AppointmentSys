@@ -10,14 +10,20 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding-top: var(--topbar-h);
 }
 
 .hr-sidebar.collapsed + .main {
   margin-left: var(--sidebar-w-collapsed);
 }
 
+.hr-sidebar.collapsed + .main .hr-header {
+  left: var(--sidebar-w-collapsed);
+}
+
 @media (max-width: 900px) {
   .main { margin-left: 0; }
+  .hr-header { left: 0; }
 }
 
 /* ── App header (primary nav bar) ────── */
@@ -29,8 +35,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-14);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: var(--sidebar-w);
+  right: 0;
   z-index: 40;
 }
 
@@ -81,7 +89,7 @@
 .hr-pagebar {
   background-color: var(--color-white);
   border-bottom: 1px solid var(--color-pagebar-border);
-  padding: 0.85rem 1.5rem;
+  padding: 0.5rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -109,8 +117,8 @@
 }
 
 /* ── Inner page padding ──────────────── */
-.hr-main  { padding: var(--space-14); }
-.content  { padding: var(--space-14); flex: 1; }
+.hr-main  { padding: var(--space-8); }
+.content  { padding: var(--space-8); flex: 1; }
 
 /* ── Legacy topbar (secondary pages) ── */
 .topbar {
@@ -121,8 +129,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-14);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: var(--sidebar-w);
+  right: 0;
   z-index: 40;
 }
 

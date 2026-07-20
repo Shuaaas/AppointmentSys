@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Dashboard') – HR Recruitment</title>
+<link rel="icon" href="{{ asset('deped_logo.png') }}" type="image/png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="{{ asset('css/page-loader.css') }}">
@@ -33,6 +34,7 @@
             </a>
         @endif
         @if (auth()->user()?->isAdmin())
+            <div class="nav-section-title">Administration</div>
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.users.create') ? 'active' : '' }}" data-tooltip="Manage Users">
                 <i class="ti ti-users" aria-hidden="true"></i>
                 <span class="nav-label">Manage Users</span>
@@ -365,7 +367,15 @@
 
                 const newModals = doc.getElementById('hr-modals');
                 const curModals = document.getElementById('hr-modals');
-                if (newModals && curModals) curModals.innerHTML = newModals.innerHTML;
+                if (newModals && curModals) {
+                    curModals.innerHTML = newModals.innerHTML;
+                    newModals.querySelectorAll('script').forEach(function (old) {
+                        const s = document.createElement('script');
+                        if (old.src) s.src = old.src;
+                        else s.textContent = old.textContent;
+                        curModals.appendChild(s);
+                    });
+                }
 
                 reinitScripts(doc);
 
