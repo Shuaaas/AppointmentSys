@@ -38,7 +38,6 @@
                     <th>School / district</th>
                     <th>Nature of appt.</th>
                     <th>Status</th>
-                    <th>Concluded / Deleted</th>
                     <th>Date encoded</th>
                     <th>Action</th>
                 </tr>
@@ -64,15 +63,6 @@
                                 {{ $item->display_record_state }}
                             </span>
                         </td>
-                        <td>
-                            @if ($item->record_state === 'deleted')
-                                Deleted at {{ optional($item->deleted_at)->format('M d, Y') }}
-                            @elseif ($item->record_state === 'concluded')
-                                Concluded at {{ optional($item->date_concluded)->format('M d, Y') }}
-                            @else
-                                {{ $item->display_record_state }}
-                            @endif
-                        </td>
                         <td style="font-size:12px;color:var(--text-muted);">
                             {{ optional($item->encoded_at)->format('F j, Y g:i A') }}
                         </td>
@@ -89,7 +79,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8"><p class="empty-note">No history entries found.</p></td>
+                        <td colspan="7"><p class="empty-note">No history entries found.</p></td>
                     </tr>
                 @endforelse
             </tbody>

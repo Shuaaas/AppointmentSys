@@ -64,12 +64,16 @@ Route::middleware('auth')->group(function () {
             Route::get('/{appointment}/final-deliberation/download', [AppointmentController::class, 'downloadFinalDeliberation'])->name('downloadFinalDeliberation');
             Route::match(['get', 'post'], '/export/csv', [AppointmentController::class, 'exportCsv'])->name('export');
             Route::post('/export/monitoring', [AppointmentController::class, 'exportMonitoringCsv'])->name('archive.exportMonitoring');
+
+            Route::get('/transaction-numbers', [AppointmentController::class, 'transactionNumbers'])->name('transactionNumbers');
         });
 
-        // Records only: the single narrow field edit.
-        Route::middleware([EnsureUserHasRole::class.':records'])->group(function () {
+        // HR and Admin: transaction number editing.
+        Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
             Route::patch('/{appointment}/transaction-number', [AppointmentController::class, 'updateTransactionNumber'])
                 ->name('updateTransactionNumber');
+            Route::get('/check-transaction-number', [AppointmentController::class, 'checkTransactionNumber'])
+                ->name('checkTransactionNumber');
         });
 
         Route::middleware([EnsureUserHasRole::class.':admin'])->group(function () {

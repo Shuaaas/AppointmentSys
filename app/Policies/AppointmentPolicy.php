@@ -49,13 +49,11 @@ class AppointmentPolicy
     }
 
     /**
-     * Records role: can ONLY edit the transaction_number field.
-     * Enforce the field restriction in the FormRequest/controller too —
-     * this policy just gates whether they can hit that specific action at all.
+     * HR role: can ONLY edit the transaction_number field.
      */
     public function updateTransactionNumber(User $user, Appointment $appointment): bool
     {
-        return $user->isRecords() || $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     /**

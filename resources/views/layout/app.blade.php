@@ -64,6 +64,10 @@
                     <i class="ti ti-file-plus" aria-hidden="true"></i>
                     <span class="nav-label">New Appointment</span>
                 </a>
+                <a href="{{ route('appointments.transactionNumbers') }}" class="nav-link {{ request()->routeIs('appointments.transactionNumbers') ? 'active' : '' }}" data-tooltip="Transaction Numbers">
+                    <i class="ti ti-file-text" aria-hidden="true"></i>
+                    <span class="nav-label">Transaction Numbers</span>
+                </a>
             @endif
             <div class="nav-section-title">Records</div>
             <a href="{{ route('history.index') }}" class="nav-link {{ request()->routeIs('history.*') ? 'active' : '' }}" data-tooltip="History">

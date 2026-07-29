@@ -146,6 +146,55 @@ class AppointmentController extends Controller
     }
 
     /**
+     * Transaction Numbers page for HR role.
+     * Shows HR's own appointments in the Records-style TN table.
+     */
+    public function transactionNumbers(Request $request): View
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $search = $request->query('q', '');
+        $selectedDate = $request->query('date');
+
+        $availableDates = Appointment::query()
+            ->where('user_id', $request->user()->id)
+            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
+            ->active()
+            ->selectRaw('DATE(encoded_at) as d')
+            ->distinct()
+            ->orderByDesc('d')
+            ->pluck('d');
+
+        if (!$selectedDate && $availableDates->isNotEmpty()) {
+            $selectedDate = $availableDates->first();
+        }
+
+        $appointmentsQuery = Appointment::query()
+            ->where('user_id', $request->user()->id)
+            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
+            ->where('record_state', 'in_progress')
+            ->when($search, fn ($q) => $q->search($search))
+            ->when($selectedDate, fn ($q) => $q->whereDate('encoded_at', $selectedDate))
+            ->orderByDesc('encoded_at');
+
+        $appointments = $appointmentsQuery->get();
+
+        $needsTNCount = Appointment::query()
+            ->where('user_id', $request->user()->id)
+            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
+            ->whereIn('record_state', ['new', 'active', 'in_progress'])
+            ->count();
+
+        return view('appointments.transaction-numbers', [
+            'appointments' => $appointments,
+            'availableDates' => $availableDates,
+            'selectedDate' => $selectedDate,
+            'search' => $search,
+            'needsTNCount' => $needsTNCount,
+        ]);
+    }
+
+    /**
      * Show the create appointment form.
      * HR only.
      */
@@ -207,8 +256,23 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Records role: update ONLY the transaction_number field.
-     * Policy: Records + Admin.
+     * Lightweight AJAX check for duplicate transaction numbers.
+     */
+    public function checkTransactionNumber(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $tn = trim((string) $request->query('tn', ''));
+        $id = $request->query('id');
+
+        $exists = Appointment::query()
+            ->where('transaction_number', $tn)
+            ->when($id, fn ($q) => $q->where('id', '!=', (int) $id))
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
+    /**
+     * HR and Admin role: update ONLY the transaction_number field.
      */
     public function updateTransactionNumber(
         UpdateTransactionNumberRequest $request,
@@ -237,7 +301,7 @@ class AppointmentController extends Controller
         ]);
 
         return redirect()
-            ->route('appointments.index')
+            ->route('appointments.archive')
             ->with('tn_saved', $newTxn)
             ->with('tn_name', $appointment->full_name);
     }
@@ -553,12 +617,16 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Export monitoring data for selected archived appointments using the
-     * SAMPLE MONITORING.xlsx template, bundled into a ZIP archive.
+     * Export monitoring data for selected archived appointments as a single
+     * consolidated XLSX using the SAMPLE MONITORING.xlsx template.
+     * Filename is based on the unique months of encoded_at.
      */
     public function exportMonitoringCsv(Request $request, AppointmentFormService $formService): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $this->authorize('viewAny', Appointment::class);
+
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
 
         $ids = $request->input('ids', []);
 
@@ -579,50 +647,41 @@ class AppointmentController extends Controller
             abort(404, 'No archived appointments found for selected IDs.');
         }
 
-        $outputDirectory = storage_path('app/temp/appointment-forms');
-        File::ensureDirectoryExists($outputDirectory);
-
-        $files = [];
-
-        foreach ($appointments as $appointment) {
-            try {
-                $path = $formService->generateMonitoring($appointment);
-                $txn = $appointment->transaction_number ?? $appointment->id;
-                $name = 'monitoring_' . $txn . '_' . $appointment->id . '.xlsx';
-                $files[] = ['path' => $path, 'name' => $name];
-            } catch (\Throwable $e) {
-                \Log::error("Failed to generate monitoring for appointment {$appointment->id}: {$e->getMessage()}");
-            }
+        try {
+            $path = $formService->generateConsolidatedMonitoring($appointments);
+        } catch (\Throwable $e) {
+            \Log::error('Monitoring export failed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'ids' => $ids,
+                'user_id' => auth()->id(),
+            ]);
+            abort(500, 'Failed to generate monitoring document. Please try again or contact support.');
         }
 
-        if (empty($files)) {
-            abort(500, 'Failed to generate any monitoring documents.');
-        }
+        $months = $appointments
+            ->pluck('encoded_at')
+            ->filter()
+            ->unique(function ($date) {
+                if ($date instanceof \DateTimeInterface) {
+                    return $date->format('Y-m');
+                }
 
-        $zipName = 'monitoring_export_' . now()->format('Ymd_His') . '.zip';
-        $zipPath = $outputDirectory . DIRECTORY_SEPARATOR . $zipName;
+                return date('Y-m', strtotime((string) $date));
+            })
+            ->sort()
+            ->map(function ($date) {
+                if ($date instanceof \DateTimeInterface) {
+                    return $date->format('F');
+                }
 
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException('Unable to create monitoring ZIP archive.');
-        }
+                return date('F', strtotime((string) $date));
+            })
+            ->implode('-');
 
-        foreach ($files as $file) {
-            $zip->addFile($file['path'], $file['name']);
-        }
+        $filename = 'MONITORING DATA_' . $months . '.xlsx';
 
-        $zip->close();
-
-        foreach ($files as $file) {
-            try {
-                @unlink($file['path']);
-            } catch (\Throwable $e) {
-                // Ignore cleanup failures
-            }
-        }
-
-        return response()->download($zipPath, $zipName, [
-            'Content-Type' => 'application/zip',
+        return response()->download($path, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
 }

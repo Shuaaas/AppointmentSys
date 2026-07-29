@@ -448,6 +448,7 @@ function populateWizardForm(data) {
     setValue('f-nonteaching', data.non_teaching);
 
     if (typeof syncReadonly === 'function') syncReadonly();
+    if (typeof syncPwdType === 'function') syncPwdType();
     if (typeof syncChecklist === 'function') syncChecklist();
     if (typeof syncFinalDeliberation === 'function') syncFinalDeliberation();
     if (typeof syncDateFieldsByStatus === 'function') syncDateFieldsByStatus();
@@ -525,7 +526,7 @@ function buildAppointmentSummary(data) {
         ['Salary in words', data.compensation_words],
         ['Salary in numbers', data.compensation_numbers],
         ['Appointment nature', data.nature_of_appointment],
-        ['Incumbent', data.previous_incumbent || 'Vacant'],
+        ['Incumbent', data.incumbent || 'Vacant'],
         ['Reason of Incumbent', data.natural_vacancy || 'N/A'],
         ['Date of signing', formatDate(data.date_of_signing)],
         ['Publication Date (FROM)', data.employee_status === 'Permanent' ? formatDate(data.publication_date_from) : 'N/A'],
@@ -558,11 +559,25 @@ function buildAppointmentSummary(data) {
         ['Date of signing', formatDate(data.date_of_signing)],
     ];
 
+    const monitoringRows = [
+        ['Date of Last Promotion', formatDate(data.date_last_promotion)],
+        ['Position From', data.position_from],
+        ['Name of Previous Incumbent', data.previous_incumbent || 'Vacant'],
+        ['Position Level', data.position_level],
+        ['Sex', data.sex],
+        ['Date of Birth', formatDate(data.date_of_birth)],
+        ['PWD?', data.pwd],
+        ['Type of Disability', data.type_of_disability || (data.pwd === 'No' ? 'N/A' : '—')],
+        ['Member of IP Group?', data.ip_group_member],
+        ['Ethnicity', data.ethnicity || '—'],
+    ];
+
     const sections = [
         { key: 'appointment', title: 'Appointment', rows: appointmentRows },
         { key: 'checklist', title: 'Checklist', rows: checklistRows },
         { key: 'rai', title: 'RAI', rows: raiRows },
         { key: 'final', title: 'Final Deliberation', rows: finalDeliberationRows },
+        { key: 'monitoring', title: 'Monitoring Data', rows: monitoringRows },
     ];
 
     return `
@@ -991,22 +1006,24 @@ function initIndexPage() {
     });
 
     // Status menu toggle inside the table header
-    const statusBtn = document.getElementById('status-menu-button');
-    const statusMenu = document.getElementById('status-menu');
-    if (statusBtn && statusMenu) {
-        statusBtn.addEventListener('click', function (e) {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('#status-menu-button');
+        if (btn) {
+            e.preventDefault();
             e.stopPropagation();
-            const isOpen = statusMenu.style.display === 'block';
+            const menu = document.getElementById('status-menu');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block';
             document.querySelectorAll('#status-menu').forEach(m => m.style.display = 'none');
-            statusMenu.style.display = isOpen ? 'none' : 'block';
-        });
+            menu.style.display = isOpen ? 'none' : 'block';
+            return;
+        }
 
-        document.addEventListener('click', function (ev) {
-            if (!ev.target.closest('#status-menu') && !ev.target.closest('#status-menu-button')) {
-                statusMenu.style.display = 'none';
-            }
-        });
-    }
+        const menu = e.target.closest('#status-menu');
+        if (!menu) {
+            document.querySelectorAll('#status-menu').forEach(m => m.style.display = 'none');
+        }
+    });
 }
 
 // Run on full page load and on every AJAX navigation.

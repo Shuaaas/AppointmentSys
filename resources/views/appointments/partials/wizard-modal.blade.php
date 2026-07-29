@@ -67,7 +67,7 @@
                                 <option value="">Select</option><option>Original</option><option>Promotion</option><option>Demotion</option><option>Transfer</option><option>Re-Classification</option><option>Re-Employment</option><option>Re-Appointment</option>
                             </select>
                         </div>
-                        <div class="wz-field"><label>Incumbent</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name"></div>
+                        <div class="wz-field"><label>Incumbent</label><input type="text" name="incumbent" id="f-incumbent" placeholder="Full name"></div>
                         <div class="wz-field"><label>Reason of Incumbent</label><input type="text" name="natural_vacancy" id="f-natural" placeholder="e.g. Transferred, Promotion,..."></div>
 
                         <div class="wz-field"><label>Date of signing</label><input type="date" name="date_of_signing" id="f-dosign"></div>
@@ -506,7 +506,7 @@ function wzBuildReview() {
             ['Position', wg('f-pos')], ['Salary grade', wg('f-sg') && wg('f-step') ? wg('f-sg') + '-' + wg('f-step') : wg('f-sg')],
             ['Employment status', wg('f-estatus')], ['District', wg('f-school')], ['School', wg('f-school-new')],
             ['Salary in words', wg('f-salwords')], ['Salary in numbers', wg('f-salnums')],
-            ['Appointment nature', wg('f-nature')], ['Incumbent', wg('f-prev') || 'Vacant'],
+            ['Appointment nature', wg('f-nature')], ['Incumbent', wg('f-incumbent') || 'Vacant'],
             ['Reason', wg('f-natural') || 'N/A'], ['Plantilla number', wg('f-plantilla-item')],
             ['Page number', wg('f-plantilla-page')],
             ['Date of signing', wg('f-dosign')],

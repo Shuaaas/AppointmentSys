@@ -67,7 +67,7 @@
                                 </select>
                             </div>
 
-                            <div class="wz-field"><label>Incumbent</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name" value="{{ old('previous_incumbent') }}"></div>
+                            <div class="wz-field"><label>Incumbent</label><input type="text" name="incumbent" id="f-incumbent" placeholder="Full name" value="{{ old('incumbent') }}"></div>
                             <div class="wz-field"><label>Reason of Incumbent</label><input type="text" name="natural_vacancy" id="f-natural" placeholder="e.g. Transferred, Promotion,..." value="{{ old('natural_vacancy') }}"></div>
 
                             <div class="wz-field"><label>Date of signing</label><input type="date" name="date_of_signing" id="f-dosign" value="{{ old('date_of_signing') }}"></div>
@@ -170,10 +170,6 @@
 
                     {{-- STEP 5: Monitoring Data --}}
                     <div class="step-panel" id="wz-step-4">
-                        <div class="wz-section-head">
-                            <div class="wz-icon"><i class="ti ti-user-check" aria-hidden="true"></i></div>
-                            <div><div class="wz-section-title">Monitoring Data</div><div class="wz-section-sub">Personal and demographic information</div></div>
-                        </div>
                         <div class="wz-grid">
                             <div class="wz-field"><label>Date of Last Promotion</label><input type="date" name="date_last_promotion" id="f-dlp" value="{{ old('date_last_promotion') }}"></div>
                             <div class="wz-field"><label>Position From <span class="req">*</span></label><input type="text" name="position_from" id="f-pfrom" placeholder="e.g. Teacher I" value="{{ old('position_from') }}" required></div>
@@ -347,7 +343,7 @@ function wzBuildReview() {
             ['Position', wg('f-pos')], ['Salary grade', wg('f-sg') && wg('f-step') ? wg('f-sg') + '-' + wg('f-step') : wg('f-sg')],
             ['Employment status', wg('f-estatus')], ['District', wg('f-school')], ['School', wg('f-school-new')],
             ['Salary in words', wg('f-salwords')], ['Salary in numbers', wg('f-salnums')],
-            ['Appointment nature', wg('f-nature')], ['Incumbent', wg('f-prev') || 'Vacant'],
+            ['Appointment nature', wg('f-nature')], ['Incumbent', wg('f-incumbent') || 'Vacant'],
             ['Reason', wg('f-natural') || 'N/A'], ['Plantilla number', wg('f-plantilla-item')],
             ['Page number', wg('f-plantilla-page')],
             ['Date of signing', wg('f-dosign')],

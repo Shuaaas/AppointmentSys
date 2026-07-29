@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpWord\TemplateProcessor;
 use RuntimeException;
@@ -576,31 +577,115 @@ class AppointmentFormService
         return $outputPath;
     }
 
+    /**
+     * Generate a single consolidated monitoring XLSX for multiple appointments.
+     * The first appointment fills the template placeholders in row 4,
+     * subsequent appointments are written into rows 5, 6, 7...
+     */
+    public function generateConsolidatedMonitoring(\Illuminate\Support\Collection $appointments): string
+    {
+        $templatePath = resource_path('templates/SAMPLE MONITORING.xlsx');
+
+        if (! File::exists($templatePath)) {
+            throw new RuntimeException('Monitoring template was not found.');
+        }
+
+        $outputPath = $this->ensureOutputDirectory()
+            . DIRECTORY_SEPARATOR
+            . sprintf('monitoring-consolidated-%s.xlsx', now()->format('YmdHis'));
+
+        /** @var Spreadsheet $spreadsheet */
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        if ($appointments->isNotEmpty()) {
+            $this->replacePlaceholdersInSheet($sheet, $this->monitoringPlaceholderValues($appointments->first()));
+        }
+
+        $count = 0;
+        foreach ($appointments->skip(1) as $appointment) {
+            $count++;
+            $this->writeMonitoringDataRow($sheet, 4 + $count, $appointment);
+        }
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($outputPath);
+
+        if (! File::exists($outputPath)) {
+            throw new RuntimeException('Consolidated monitoring could not be generated.');
+        }
+
+        return $outputPath;
+    }
+
+    private function writeMonitoringDataRow(Worksheet $sheet, int $row, Appointment $appointment): void
+    {
+        $values = $this->monitoringPlaceholderValues($appointment);
+
+        $mapping = [
+            'D'  => 'school',
+            'E'  => 'plantilla_number',
+            'F'  => 'position_from',
+            'G'  => 'position',
+            'H'  => 'vice',
+            'I'  => 'sex',
+            'J'  => 'date_of_birth',
+            'K'  => 'tin',
+            'L'  => 'date_of_signing',
+            'M'  => 'date_of_last_promotion',
+            'N'  => 'eligibility_type',
+            'O'  => 'eligibility_validity',
+            'P'  => 'eligibility_first_used',
+            'Q'  => 'salary_grade',
+            'R'  => 'position_level',
+            'S'  => 'appointment_nature',
+            'T'  => 'employment_status',
+            'U'  => 'pwd',
+            'V'  => 'type_of_disability',
+            'W'  => 'ip_group_member',
+            'X'  => 'ethnicity',
+            'Y'  => 'previous_incumbent',
+            'Z'  => 'natural_vacancy',
+            'AL' => 'SUBMITTED',
+            'AM' => 'POSTED',
+        ];
+
+        foreach ($mapping as $col => $key) {
+            $cell = $sheet->getCell($col . $row);
+            $value = in_array($key, ['SUBMITTED', 'POSTED']) ? $key : ($values[$key] ?? '');
+            $cell->setValueExplicit($value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+            if ($col === 'H') {
+                $cell->getStyle()->getFont()->getColor()->setRGB(Color::COLOR_BLACK);
+            }
+        }
+    }
+
     private function monitoringPlaceholderValues(Appointment $appointment): array
     {
         return [
-            'school' => $this->properCase($appointment->school ?: $appointment->agency_name ?? $appointment->school_district),
-            'plantilla_number' => $appointment->plantilla_item_number,
-            'position_from' => $appointment->position_from ?: '',
+            'school' => $this->upper($appointment->school ?: ($appointment->agency_name ?? ($appointment->school_district ?: ''))),
+            'plantilla_number' => $this->upper($appointment->plantilla_item_number ?: ''),
+            'position_from' => $this->upper($appointment->position_from ?: ''),
             'position' => $this->upper($appointment->position_title),
-            'vice' => $this->properCase($appointment->previous_incumbent ?: 'Vacant'),
-            'sex' => $appointment->sex ?: '',
+            'vice' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
+            'sex' => $this->upper($appointment->sex ?: ''),
             'date_of_birth' => $this->dateShort($appointment->date_of_birth),
-            'tin' => $appointment->tin ?: '',
+            'tin' => $this->upper($appointment->tin ?: ''),
             'date_of_signing' => $this->dateShort($appointment->date_of_signing),
             'date_of_last_promotion' => $this->dateShort($appointment->date_last_promotion),
-            'eligibility_type' => $appointment->eligibility_type ?: '',
+            'eligibility_type' => $this->upper($appointment->eligibility_type ?: ''),
             'eligibility_validity' => $this->dateShort($appointment->eligibility_validity),
-            'eligibility_first_used' => $appointment->eligibility_first_used ?: '',
+            'eligibility_first_used' => $this->upper($appointment->eligibility_first_used ?: ''),
             'salary_grade' => $this->salaryGrade($appointment),
-            'position_level' => $appointment->position_level ?: '',
-            'appointment_nature' => $this->properCase($appointment->nature_of_appointment),
-            'employment_status' => $this->properCase($appointment->employee_status),
-            'pwd' => $appointment->pwd ?: '',
-            'type_of_disability' => $appointment->type_of_disability ?: '',
-            'ip_group_member' => $appointment->ip_group_member ?: '',
-            'ethnicity' => $appointment->ethnicity ?: '',
-            'previous_incumbent' => $this->properCase($appointment->previous_incumbent ?: 'Vacant'),
+            'position_level' => $this->upper($appointment->position_level ?: ''),
+            'appointment_nature' => $this->upper($appointment->nature_of_appointment ?: ''),
+            'employment_status' => $this->upper($appointment->employee_status ?: ''),
+            'pwd' => $this->upper($appointment->pwd ?: ''),
+            'type_of_disability' => $this->upper($appointment->type_of_disability ?: ($appointment->pwd === 'No' ? 'N/A' : '')),
+            'ip_group_member' => $this->upper($appointment->ip_group_member ?: ''),
+            'ethnicity' => $this->upper($appointment->ethnicity ?: ''),
+            'previous_incumbent' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
         ];
     }
