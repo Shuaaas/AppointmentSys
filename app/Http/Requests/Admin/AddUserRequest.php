@@ -20,7 +20,7 @@ class AddUserRequest extends FormRequest
     {
         return [
             'name'     => ['required', 'string', 'max:150'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email', 'unique:invitations,email'],
             'password' => ['required', 'confirmed', 'min:8'],
             'role'     => ['required', 'in:hr,records,manager'],
         ];

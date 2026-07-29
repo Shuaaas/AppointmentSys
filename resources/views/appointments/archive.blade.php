@@ -3,11 +3,32 @@
 @section('title', 'Archive')
 
 @section('content')
+<iframe name="download-iframe" style="display:none"></iframe>
 <div class="action-bar">
     <form class="search-wrap" method="GET" action="{{ route('appointments.archive') }}">
         <i class="ti ti-search" aria-hidden="true"></i>
         <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…" onchange="this.form.submit()">
     </form>
+
+    <button type="button" class="btn btn-secondary" id="btn-export-monitoring" onclick="submitMonitoringExport()">
+        <i class="ti ti-file-export" aria-hidden="true"></i> <span id="monitoring-export-label">Export Monitoring</span>
+    </button>
+
+    <div class="overlay" id="overlay-monitoring-confirm">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-head">
+                <span class="modal-title">Confirm Export</span>
+                <button type="button" class="modal-close" onclick="closeModal('overlay-monitoring-confirm')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to export the monitoring data for the selected record(s)?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('overlay-monitoring-confirm')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmMonitoringExport()">Export</button>
+            </div>
+        </div>
+    </div>
 
     <form class="date-control" method="GET" action="{{ route('appointments.archive') }}">
         <div class="date-range">
@@ -33,7 +54,7 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th><input type="checkbox" id="select-all-archive" onchange="toggleSelectAll(this)"></th>
                     <th>Full name</th>
                     <th>School / district</th>
                     <th>Nature of appt.</th>
@@ -43,8 +64,8 @@
             </thead>
             <tbody>
                 @forelse ($appointments as $i => $a)
-                    <tr class="data-row">
-                        <td style="color:var(--text-muted)">{{ $i + 1 }}</td>
+                    <tr class="data-row" id="row-{{ $a->id }}">
+                        <td><input type="checkbox" class="select-row" name="ids[]" value="{{ $a->id }}"></td>
                         <td>
                             <div class="name-text">{{ $a->full_name }}</div>
                             <div class="small-text">{{ $a->position_title }}</div>
@@ -65,16 +86,69 @@
         </table>
     </div>
     <div class="footer-bar">
-        <span>
-            @if ($appointments->total() > 0)
-                Showing {{ $appointments->firstItem() }}–{{ $appointments->lastItem() }} of {{ $appointments->total() }} result{{ $appointments->total() !== 1 ? 's' : '' }}
-            @else
-                No results found.
-            @endif
-        </span>
-        <div class="pagination-links">
-            {{ $appointments->withQueryString()->links() }}
-        </div>
+        {{ $appointments->withQueryString()->links('vendor.pagination.pams') }}
     </div>
 </div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function toggleSelectAll(source) {
+    document.querySelectorAll('.select-row').forEach(cb => cb.checked = source.checked);
+}
+
+function submitMonitoringExport() {
+    const selected = Array.from(document.querySelectorAll('.select-row:checked')).map(cb => cb.value);
+    if (selected.length === 0) {
+        alert('Please select at least one record to export.');
+        return;
+    }
+    openModal('overlay-monitoring-confirm');
+}
+
+function confirmMonitoringExport() {
+    closeModal('overlay-monitoring-confirm');
+
+    const btn = document.getElementById('btn-export-monitoring');
+    const label = document.getElementById('monitoring-export-label');
+    if (btn) btn.disabled = true;
+    if (label) label.textContent = 'Downloading...';
+
+    const selected = Array.from(document.querySelectorAll('.select-row:checked')).map(cb => cb.value);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('appointments.archive.exportMonitoring') }}';
+    form.target = 'download-iframe';
+
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = token;
+    form.appendChild(csrf);
+
+    selected.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'ids[]';
+        input.value = id;
+        form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+
+    setTimeout(() => {
+        if (btn) btn.disabled = false;
+        if (label) label.textContent = 'Export Monitoring';
+    }, 5000);
+}
+</script>
 @endsection

@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\ResetPasswordRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Services\InvitationService;
 use App\Services\User\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ use Illuminate\View\View;
 class UserController extends Controller
 {
     public function __construct(
-        private readonly UserService $userService
+        private readonly UserService $userService,
+        private readonly InvitationService $invitationService
     ) {}
 
     /**
@@ -88,18 +90,19 @@ class UserController extends Controller
     }
 
     /**
-     * Create a user account directly (active immediately, no approval step).
-     * Policy: Admin only.
-     */
+      * Create a user account directly (active immediately, no approval step).
+      * Sends a confirmation email; the account is only created after the user
+      * clicks the confirmation button in the email.
+      */
     public function addUser(AddUserRequest $request): RedirectResponse
     {
         $this->authorize('create', User::class);
 
-        $user = $this->userService->createDirect($request->validated());
+        $this->invitationService->create($request->validated());
 
         return redirect()
             ->route('admin.users.create')
-            ->with('success', "{$user->name} was successfully added as {$user->roleLabel()}.");
+            ->with('success', 'Invitation sent successfully. The user must confirm via email before the account is created.');
     }
 
     /**

@@ -131,7 +131,7 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initDashboardApprovalModal() {
             const modal = document.getElementById('approval-confirm-modal');
             const title = document.getElementById('approval-confirm-title');
             const text = document.getElementById('approval-confirm-text');
@@ -172,7 +172,19 @@
                     pendingForm.submit();
                 }
             });
-        });
+        }
+
+        function initializeDashboardApprovalModalSafely() {
+            window.requestAnimationFrame(function () {
+                initDashboardApprovalModal();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeDashboardApprovalModalSafely);
+        document.addEventListener('hr:page:load', initializeDashboardApprovalModalSafely);
+        if (document.readyState !== 'loading') {
+            initializeDashboardApprovalModalSafely();
+        }
     </script>
 
 @else

@@ -80,10 +80,9 @@
                 <i class="ti ti-download" aria-hidden="true"></i> Export CSV
             </a> -->
             <button type="button" class="btn btn-secondary" id="bulk-download-btn" onclick="submitBulkDownload()">
-                <i class="ti ti-zip" aria-hidden="true"></i> <span class="download-label">Download ZIP</span>
-            </button>
-            <button type="button" class="btn btn-print" id="bulk-print-btn" onclick="openPrintModal()" disabled>
-                <i class="ti ti-printer" aria-hidden="true"></i> <span class="print-label">Print selected</span>
+                <i class="ti ti-zip download-icon" aria-hidden="true"></i>
+                <i class="ti ti-spinner download-spinner" aria-hidden="true" style="display:none"></i>
+                <span class="download-label">Download ZIP</span>
             </button>
             <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
                 <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
@@ -171,7 +170,7 @@
                 </colgroup>
             <thead>
                     <tr>
-                        @unless(auth()->user()?->isManager())<th><input type="checkbox" id="select-all" aria-label="Select all rows"></th>@endunless<th>#</th><th>Full name</th><th>School / district</th>
+                        @unless(auth()->user()?->isManager())<th><input type="checkbox" id="select-all" aria-label="Select all rows"></th>@endunless<th>#</th><th>Full name</th><th>District</th>
                     <th>Nature of appt.</th>
                     <th style="white-space:nowrap;position:relative">
                         @php
@@ -294,7 +293,6 @@
     @include('appointments.partials.delete-modal')
     @include('appointments.partials.download-modal')
     @include('appointments.partials.view-modal')
-    @include('appointments.partials.print-modal')
 @endpush
 
 @push('scripts')
@@ -315,12 +313,15 @@ function toggleRow(id, e) {
     }
 }
 
-document.addEventListener('click', function (e) {
-    if (!e.target.closest('.open-btn') && !e.target.closest('.dropdown-row')) {
-        document.querySelectorAll('.dropdown-row.open').forEach(r => r.classList.remove('open'));
-        document.querySelectorAll('.open-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
-    }
-});
+if (!window.__hrRowClose) {
+    window.__hrRowClose = true;
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.open-btn') && !e.target.closest('.dropdown-row')) {
+            document.querySelectorAll('.dropdown-row.open').forEach(r => r.classList.remove('open'));
+            document.querySelectorAll('.open-btn.open').forEach(b => { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
+        }
+    });
+}
 
 function openDelete(id, name) {
     document.getElementById('del-name').textContent = name;
@@ -329,21 +330,34 @@ function openDelete(id, name) {
 }
 
 function openEditWizard(id) {
-    const form = document.getElementById('wizard-form');
-    const title = document.getElementById('wizard-modal-title');
+    const form   = document.getElementById('wizard-form');
+    const title  = document.getElementById('wizard-modal-title');
     const method = document.getElementById('wizard-method');
+
+    if (!form || !title || !method) {
+        alert('Edit form is not available. Please refresh the page and try again.');
+        return;
+    }
 
     form.reset();
     form.action = '{{ url("appointments") }}/' + id;
     method.value = 'PUT';
-    title.textContent = 'Edit appointment';
+    title.textContent = 'Loading…';
 
     fetch('{{ url("appointments") }}/' + id, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
     })
         .then(response => {
+            if (response.status === 403) {
+                throw new Error('You do not have permission to edit this appointment.');
+            }
+            if (response.status === 401) {
+                window.location.href = '{{ route("login") }}';
+                throw new Error('Session expired. Redirecting to login…');
+            }
             if (!response.ok) {
-                throw new Error('Failed to load appointment details.');
+                throw new Error('Server error (' + response.status + '). Please try again.');
             }
             return response.json();
         })
@@ -351,12 +365,19 @@ function openEditWizard(id) {
             populateWizardForm(data);
             wzCurrent = 0;
             wzUpdateUI();
-            document.getElementById('overlay-wizard').classList.add('show');
+            // Re-query at callback time in case the DOM was swapped mid-flight.
+            const t = document.getElementById('wizard-modal-title');
+            if (t) t.textContent = 'Edit appointment';
+            const overlay = document.getElementById('overlay-wizard');
+            if (overlay) overlay.classList.add('show');
         })
-        .catch(() => {
-            alert('Unable to load appointment details for editing.');
+        .catch(err => {
+            const t = document.getElementById('wizard-modal-title');
+            if (t) t.textContent = 'Edit appointment';
+            alert(err.message || 'Unable to load appointment details for editing.');
         });
 }
+
 
 function populateWizardForm(data) {
     const setValue = (id, value) => {
@@ -412,12 +433,15 @@ function populateWizardForm(data) {
     setValue('f-elig', data.eligibility_type);
     setValue('f-eligvalid', data.eligibility_validity);
     setValue('f-eligfirst', data.eligibility_first_used);
-    setValue('f-doa', data.date_original_appointment);
     setValue('f-dlp', data.date_last_promotion);
 
     // New template fields
     setValue('f-natural', data.natural_vacancy);
     setValue('f-dosign', data.date_of_signing);
+    setValue('f-pubdate-from', data.publication_date_from);
+    setValue('f-pubdate-to', data.publication_date_to);
+    setValue('f-assessment', data.assessment_date);
+    setValue('f-deliberation', data.deliberation_date);
     setValue('f-education', data.education);
     setValue('f-shs', data.senior_high_school);
     setValue('f-strand', data.senior_high_strand);
@@ -426,6 +450,7 @@ function populateWizardForm(data) {
     if (typeof syncReadonly === 'function') syncReadonly();
     if (typeof syncChecklist === 'function') syncChecklist();
     if (typeof syncFinalDeliberation === 'function') syncFinalDeliberation();
+    if (typeof syncDateFieldsByStatus === 'function') syncDateFieldsByStatus();
 }
 
 function openViewSummary(id) {
@@ -500,11 +525,13 @@ function buildAppointmentSummary(data) {
         ['Salary in words', data.compensation_words],
         ['Salary in numbers', data.compensation_numbers],
         ['Appointment nature', data.nature_of_appointment],
-        ['Incumbent', data.previous_incumbent],
-        ['Reason of Incumbent', data.natural_vacancy],
-        ['Date of appointment', formatDate(data.date_original_appointment)],
+        ['Incumbent', data.previous_incumbent || 'Vacant'],
+        ['Reason of Incumbent', data.natural_vacancy || 'N/A'],
         ['Date of signing', formatDate(data.date_of_signing)],
-        ['Date of validity', formatDate(data.eligibility_validity)],
+        ['Publication Date (FROM)', data.employee_status === 'Permanent' ? formatDate(data.publication_date_from) : 'N/A'],
+        ['Publication Date (TO)', data.employee_status === 'Permanent' ? formatDate(data.publication_date_to) : 'N/A'],
+        ['Assessment Date', data.employee_status === 'Permanent' ? formatDate(data.assessment_date) : 'N/A'],
+        ['Deliberation Date', data.employee_status === 'Permanent' ? formatDate(data.deliberation_date) : 'N/A'],
     ];
 
     const checklistRows = [
@@ -522,7 +549,7 @@ function buildAppointmentSummary(data) {
         ['Salary grade', data.salary_grade],
         ['Salary number', data.compensation_numbers],
         ['Employment status', data.employee_status],
-        ['Appointment nature', data.nature_of_appointment],
+        ['Nature of Appointment', data.nature_of_appointment],
     ];
 
     const finalDeliberationRows = [
@@ -685,10 +712,13 @@ async function handleDocumentDownload(event, link) {
     refreshAppointmentStatus(appointmentId).catch(() => {});
 }
 
-async function downloadResponseAsFile(response, fallbackName) {
+async function downloadResponseAsFile(response, fallbackName, onComplete) {
     const blob = await response.blob();
     const filename = parseDownloadFilename(response.headers.get('Content-Disposition')) || fallbackName;
     triggerBrowserDownload(blob, filename);
+    if (typeof onComplete === 'function') {
+        onComplete();
+    }
 }
 
 function openBulkDeleteModal() {
@@ -751,6 +781,8 @@ function submitBulkDestroy(ids) {
     form.submit();
 }
 
+var pendingDownloadIds = [];
+
 function submitBulkDownload() {
     const ids = getSelectedIds();
     if (!ids.length) {
@@ -758,7 +790,32 @@ function submitBulkDownload() {
         return;
     }
 
+    pendingDownloadIds = ids;
+    document.getElementById('download-count').textContent = ids.length;
+
+    const list = document.getElementById('download-confirm-list');
+    if (list) {
+        list.innerHTML = ids.map(id => {
+            const row = document.getElementById('row-' + id);
+            const nameEl = row ? row.querySelector('.name-text') : null;
+            const name = nameEl ? nameEl.textContent.trim() : ('Record #' + id);
+            return '<li><span class="pc-name">' + escapeHtml(name) + '</span></li>';
+        }).join('');
+    }
+
+    document.getElementById('overlay-download-confirm').classList.add('show');
+}
+
+function confirmBulkDownload() {
+    const ids = pendingDownloadIds;
+    if (!ids.length) return;
+
+    closeModal('overlay-download-confirm');
+
     const button = document.getElementById('bulk-download-btn');
+    const downloadIcon = button ? button.querySelector('.download-icon') : null;
+    const downloadSpinner = button ? button.querySelector('.download-spinner') : null;
+    const downloadLabel = button ? button.querySelector('.download-label') : null;
     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const formData = new FormData();
     formData.append('_token', token);
@@ -766,7 +823,11 @@ function submitBulkDownload() {
 
     if (button) {
         button.disabled = true;
+        button.classList.add('is-downloading');
         button.setAttribute('aria-busy', 'true');
+        if (downloadIcon) downloadIcon.style.display = 'none';
+        if (downloadSpinner) downloadSpinner.style.display = 'inline-block';
+        if (downloadLabel) downloadLabel.textContent = 'Downloading...';
     }
 
     fetch('{{ route('appointments.export') }}', {
@@ -778,7 +839,21 @@ function submitBulkDownload() {
                 throw new Error('Bulk download failed.');
             }
 
-            return downloadResponseAsFile(response, 'appointments.zip');
+            return downloadResponseAsFile(response, 'appointments.zip', () => {
+                if (button) {
+                    button.disabled = false;
+                    button.classList.remove('is-downloading');
+                    button.removeAttribute('aria-busy');
+                    if (downloadIcon) downloadIcon.style.display = 'inline-block';
+                    if (downloadSpinner) downloadSpinner.style.display = 'none';
+                    if (downloadLabel) {
+                        const selected = getSelectedIds();
+                        downloadLabel.textContent = selected.length > 0
+                            ? `Download ZIP (${selected.length})`
+                            : 'Download ZIP';
+                    }
+                }
+            });
         })
         .then(() => {
             ids.forEach(id => refreshAppointmentStatus(id).catch(() => {}));
@@ -787,76 +862,24 @@ function submitBulkDownload() {
             showDownloadModal('Unable to download selected appointments. Please try again.');
         })
         .finally(() => {
+            pendingDownloadIds = [];
             if (button) {
                 button.disabled = false;
+                button.classList.remove('is-downloading');
                 button.removeAttribute('aria-busy');
+                if (downloadIcon) downloadIcon.style.display = 'inline-block';
+                if (downloadSpinner) downloadSpinner.style.display = 'none';
+                if (downloadLabel) {
+                    const selected = getSelectedIds();
+                    downloadLabel.textContent = selected.length > 0
+                        ? `Download ZIP (${selected.length})`
+                        : 'Download ZIP';
+                }
             }
         });
 }
 
-function openPrintModal() {
-    const selected = getSelectedIds();
-    if (!selected.length) {
-        alert('Please select at least one appointment first.');
-        return;
-    }
-
-    const list = document.getElementById('print-confirm-list');
-    const countEl = document.getElementById('print-count');
-    if (!list || !countEl) return;
-
-    countEl.textContent = selected.length;
-
-    list.innerHTML = selected.map(id => {
-        const row = document.getElementById('row-' + id);
-        const nameEl = row ? row.querySelector('.name-text') : null;
-        const schoolEl = row ? row.children[3] : null;
-        const natureEl = row ? row.children[4] : null;
-        const name = nameEl ? nameEl.textContent.trim() : ('Record #' + id);
-        const school = schoolEl ? schoolEl.textContent.trim() : '';
-        const nature = natureEl ? natureEl.textContent.trim() : '';
-        return `<li><span class="pc-name">${escapeHtml(name)}</span>` +
-               `<span class="pc-detail">${escapeHtml(school)}${school && nature ? ' · ' : ''}${escapeHtml(nature)}</span></li>`;
-    }).join('');
-
-    document.getElementById('overlay-print').classList.add('show');
-}
-
-function printSelectedRecords() {
-    const ids = getSelectedIds();
-    if (!ids.length) return;
-
-    const button = document.getElementById('bulk-print-btn');
-    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '{{ route('appointments.print') }}';
-    form.target = '_blank';
-    form.style.display = 'none';
-
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = '_token';
-    csrf.value = token;
-    form.appendChild(csrf);
-
-    ids.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'ids[]';
-        input.value = id;
-        form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-
-    closeModal('overlay-print');
-    showToast(`Sent ${ids.length} record${ids.length !== 1 ? 's' : ''} to printer.`);
-}
-
-let toastTimer = null;
+var toastTimer = null;
 function showToast(message) {
     let toast = document.getElementById('app-toast');
     if (!toast) {
@@ -884,15 +907,29 @@ function showDownloadModal(msg, title) {
     document.getElementById('overlay-download').classList.add('show');
 }
 
-document.querySelectorAll('.overlay').forEach(ov => {
-    ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(ov.id); });
-});
+// Use event delegation for overlay backdrop-click-to-close so it works
+// regardless of when modal elements are added to the DOM.
+// Deduplicate: only register once across AJAX navigations.
+if (!window.__hrOverlayClose) {
+    window.__hrOverlayClose = true;
+    document.addEventListener('click', function (e) {
+        if (e.target.classList && e.target.classList.contains('overlay') && e.target.id) {
+            const el = document.getElementById(e.target.id);
+            if (el) el.classList.remove('show');
+        }
+    });
+}
 
-document.addEventListener('DOMContentLoaded', function () {
+function initIndexPage() {
+    // PAGE GUARD: only run when the appointments data table is in main content.
+    // Prevents this handler from firing on non-index pages when it persists
+    // as an hr:page:load listener across AJAX navigations.
+    const mainEl = document.querySelector('main.content') || document.querySelector('main');
+    if (!mainEl || !mainEl.querySelector('#bulk-trash-btn')) return;
+
     const selectAll = document.getElementById('select-all');
     const rows = document.querySelectorAll('.select-row');
     const bulkTrashBtn = document.getElementById('bulk-trash-btn');
-    const bulkPrintBtn = document.getElementById('bulk-print-btn');
     const bulkDownloadBtn = document.getElementById('bulk-download-btn');
 
     const updateBulkButton = () => {
@@ -901,15 +938,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (bulkTrashBtn) {
             bulkTrashBtn.disabled = !hasSelection;
-        }
-        if (bulkPrintBtn) {
-            bulkPrintBtn.disabled = !hasSelection;
-            const label = bulkPrintBtn.querySelector('.print-label');
-            if (label) {
-                label.textContent = hasSelection
-                    ? `Print selected (${selected.length})`
-                    : 'Print selected';
-            }
         }
         if (bulkDownloadBtn) {
             const label = bulkDownloadBtn.querySelector('.download-label');
@@ -969,7 +997,6 @@ document.addEventListener('DOMContentLoaded', function () {
         statusBtn.addEventListener('click', function (e) {
             e.stopPropagation();
             const isOpen = statusMenu.style.display === 'block';
-            // close other menus
             document.querySelectorAll('#status-menu').forEach(m => m.style.display = 'none');
             statusMenu.style.display = isOpen ? 'none' : 'block';
         });
@@ -980,7 +1007,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-});
+}
+
+// Run on full page load and on every AJAX navigation.
+// Deduplicate: remove any previously registered handler before adding a fresh one.
+if (window.__hrIndexPageLoad) {
+    document.removeEventListener('hr:page:load', window.__hrIndexPageLoad);
+}
+window.__hrIndexPageLoad = initIndexPage;
+
+document.addEventListener('DOMContentLoaded', initIndexPage);
+document.addEventListener('hr:page:load', initIndexPage);
+if (document.readyState !== 'loading') {
+    initIndexPage();
+}
 </script>
 @endpush
 @endsection

@@ -17,17 +17,18 @@ class DashboardService
     /**
      * Collect all data required by the dashboard view.
      * Admin users receive additional account management stats.
+     * HR users are scoped to their own appointments.
      *
      * @return array<string, mixed>
      */
     public function getData(User $user): array
     {
         $data = array_merge(
-            $this->getAppointmentStats(),
-            ['trend' => $this->getMonthlyTrend()],
-            ['statusBreakdown' => $this->getStatusBreakdown()],
-            ['statusCounts' => $this->getRecordStateCounts()],
-            ['recent' => $this->getRecentAppointments()],
+            $this->getAppointmentStats($user),
+            ['trend' => $this->getMonthlyTrend($user)],
+            ['statusBreakdown' => $this->getStatusBreakdown($user)],
+            ['statusCounts' => $this->getRecordStateCounts($user)],
+            ['recent' => $this->getRecentAppointments($user)],
         );
 
         if ($user->isAdmin()) {
@@ -37,20 +38,35 @@ class DashboardService
         return $data;
     }
 
+    private function scopedQuery(User $user): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Appointment::query();
+
+        if ($user->isHr()) {
+            $query->where('user_id', $user->id);
+        }
+
+        if ($user->isRecords() || $user->isManager()) {
+            $query->whereNotNull('user_id');
+        }
+
+        return $query;
+    }
+
     /**
      * Core appointment summary counts shown on all dashboard cards.
      *
      * @return array{totalActive: int, permanentCount: int, tempCount: int, encodedThisMonth: int}
      */
-    public function getAppointmentStats(): array
+    public function getAppointmentStats(User $user): array
     {
+        $query = $this->scopedQuery($user)->active();
+
         return [
-            'totalActive'      => Appointment::active()->count(),
-            'permanentCount'   => Appointment::active()->where('employee_status', 'Permanent')->count(),
-            'tempCount'        => Appointment::active()
-                                    ->whereIn('employee_status', ['Substitute', 'Provisional'])
-                                    ->count(),
-            'encodedThisMonth' => $this->countEncodedThisMonth(),
+            'totalActive'      => $query->count(),
+            'permanentCount'   => $query->where('employee_status', 'Permanent')->count(),
+            'tempCount'        => $query->whereIn('employee_status', ['Substitute', 'Provisional'])->count(),
+            'encodedThisMonth' => $this->countEncodedThisMonth($user),
         ];
     }
 
@@ -58,16 +74,18 @@ class DashboardService
      * Count appointments encoded in the current calendar month.
      * Uses a driver-aware query to support both SQLite (dev) and MySQL (prod).
      */
-    public function countEncodedThisMonth(): int
+    public function countEncodedThisMonth(User $user): int
     {
+        $query = $this->scopedQuery($user)->active();
+
         if (DB::getDriverName() === 'sqlite') {
-            return Appointment::active()
+            return $query
                 ->whereRaw("strftime('%Y', encoded_at) = ?", [now()->year])
                 ->whereRaw("strftime('%m', encoded_at) = ?", [sprintf('%02d', now()->month)])
                 ->count();
         }
 
-        return Appointment::active()
+        return $query
             ->whereYear('encoded_at', now()->year)
             ->whereMonth('encoded_at', now()->month)
             ->count();
@@ -78,19 +96,20 @@ class DashboardService
      *
      * @return Collection<int, array{label: string, count: int}>
      */
-    public function getMonthlyTrend(): Collection
+    public function getMonthlyTrend(User $user): Collection
     {
         $months = collect(range(5, 0))->map(fn ($i) => now()->subMonths($i));
+        $baseQuery = $this->scopedQuery($user)->active();
 
         if (DB::getDriverName() === 'sqlite') {
-            $monthlyCounts = Appointment::active()
+            $monthlyCounts = $baseQuery
                 ->where('encoded_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->selectRaw('strftime("%Y", encoded_at) as y, strftime("%m", encoded_at) as m, COUNT(*) as total')
                 ->groupByRaw('strftime("%Y", encoded_at), strftime("%m", encoded_at)')
                 ->get()
                 ->keyBy(fn ($row) => $row->y . '-' . $row->m);
         } else {
-            $monthlyCounts = Appointment::active()
+            $monthlyCounts = $baseQuery
                 ->where('encoded_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->selectRaw('YEAR(encoded_at) as y, MONTH(encoded_at) as m, COUNT(*) as total')
                 ->groupBy('y', 'm')
@@ -113,9 +132,10 @@ class DashboardService
      *
      * @return Collection<string, int>
      */
-    public function getStatusBreakdown(): Collection
+    public function getStatusBreakdown(User $user): Collection
     {
-        return Appointment::active()
+        return $this->scopedQuery($user)
+            ->active()
             ->select('employee_status', DB::raw('COUNT(*) as total'))
             ->groupBy('employee_status')
             ->pluck('total', 'employee_status');
@@ -126,12 +146,14 @@ class DashboardService
      *
      * @return array<string, int>
      */
-    public function getRecordStateCounts(): array
+    public function getRecordStateCounts(User $user): array
     {
+        $baseQuery = $this->scopedQuery($user);
+
         return [
-            'Active'      => Appointment::whereIn('record_state', ['active', 'new'])->count(),
-            'In Progress' => Appointment::where('record_state', 'in_progress')->count(),
-            'Completed'   => Appointment::where('record_state', 'completed')->count(),
+            'Active'      => (clone $baseQuery)->whereIn('record_state', ['active', 'new'])->count(),
+            'In Progress' => (clone $baseQuery)->where('record_state', 'in_progress')->count(),
+            'Completed'   => (clone $baseQuery)->where('record_state', 'completed')->count(),
         ];
     }
 
@@ -140,9 +162,10 @@ class DashboardService
      *
      * @return Collection<int, Appointment>
      */
-    public function getRecentAppointments(): Collection
+    public function getRecentAppointments(User $user): Collection
     {
-        return Appointment::active()
+        return $this->scopedQuery($user)
+            ->active()
             ->orderByDesc('encoded_at')
             ->limit(5)
             ->get();

@@ -5,6 +5,8 @@ namespace App\Services\Appointment;
 use App\Models\Appointment;
 use App\Services\AppointmentFormService;
 use Illuminate\Support\Facades\File;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use ZipArchive;
 use RuntimeException;
 
@@ -13,7 +15,8 @@ use RuntimeException;
  * Extracted from AppointmentController::exportCsv() to separate concerns.
  *
  * Each appointment gets four documents: Appointment Form, Final Deliberation,
- * Checklist, and RAI — all bundled into a single ZIP download.
+ * Checklist, and Combined Data — bundled into a single ZIP download.
+ * A single consolidated RAI is placed at the root of the ZIP.
  */
 class DocumentExportService
 {
@@ -22,14 +25,14 @@ class DocumentExportService
     ) {}
 
     /**
-     * Generate a ZIP archive containing all four document types for every
-     * appointment in the given collection.
-     *
-     * @param  \Illuminate\Support\Collection<int, Appointment>  $appointments
-     * @return string  Absolute path to the generated ZIP file
-     *
-     * @throws RuntimeException
-     */
+      * Generate a ZIP archive containing per-appointment documents plus a single
+      * consolidated RAI at the root.
+      *
+      * @param  \Illuminate\Support\Collection<int, Appointment>  $appointments
+      * @return string  Absolute path to the generated ZIP file
+      *
+      * @throws RuntimeException
+      */
     public function buildZip(\Illuminate\Support\Collection $appointments): string
     {
         $outputDirectory = storage_path('app/temp/appointment-forms');
@@ -48,6 +51,17 @@ class DocumentExportService
             ));
 
             $this->tryEvaluateWorkflow($appointment);
+        }
+
+        try {
+            $path = $this->formService->generateConsolidatedRai($appointments);
+            $files[] = ['path' => $path, 'name' => 'RAI_Consolidated.xlsx'];
+
+            foreach ($appointments as $appointment) {
+                $this->tryMarkDownloaded($appointment, 'rai');
+            }
+        } catch (\Throwable $e) {
+            \Log::error("Failed to generate consolidated RAI: {$e->getMessage()}");
         }
 
         return $this->createZip($outputDirectory, $files);
@@ -70,7 +84,7 @@ class DocumentExportService
 
         // Appointment Form
         try {
-            $path    = $this->formService->generateWithTemplateFile($appointment, 'Appointment Form Generated Template.docx');
+            $path    = $this->formService->generateWithTemplateFile($appointment, 'SAMPLE APPOINTMENT FORM.docx');
             $files[] = ['path' => $path, 'name' => "{$folderName}/{$personPart}_Appointment.docx"];
             $this->tryMarkDownloaded($appointment, 'afa');
         } catch (\Throwable $e) {
@@ -95,13 +109,12 @@ class DocumentExportService
             \Log::error("Failed to generate checklist for {$txn}: {$e->getMessage()}");
         }
 
-        // RAI
+        // Combined Data Excel
         try {
-            $path    = $this->formService->generateRai($appointment);
-            $files[] = ['path' => $path, 'name' => "{$folderName}/{$personPart}_RAI.xlsx"];
-            $this->tryMarkDownloaded($appointment, 'rai');
+            $path    = $this->generateCombinedDataExcel($appointment);
+            $files[] = ['path' => $path, 'name' => "{$folderName}/{$personPart}_Data.xlsx"];
         } catch (\Throwable $e) {
-            \Log::error("Failed to generate RAI for {$txn}: {$e->getMessage()}");
+            \Log::error("Failed to generate combined data for {$txn}: {$e->getMessage()}");
         }
 
         return $files;
@@ -184,6 +197,92 @@ class DocumentExportService
         } catch (\Throwable $e) {
             \Log::warning("Unable to mark {$type} downloaded for appointment {$appointment->id}: {$e->getMessage()}");
         }
+    }
+
+    private function generateCombinedDataExcel(Appointment $appointment): string
+    {
+        $outputPath = storage_path('app/temp/appointment-forms')
+            . DIRECTORY_SEPARATOR
+            . sprintf('data-%s-%s.xlsx', $appointment->id, now()->format('YmdHis'));
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $headers = [
+            'Transaction Number', 'Last Name', 'First Name', 'Middle Name', 'Extension Name',
+            'Full Name', 'Position Title', 'Salary Grade', 'Employee Status', 'School District',
+            'School', 'Plantilla Item Number', 'Plantilla Page Number', 'Compensation Words',
+            'Compensation Numbers', 'Nature of Appointment', 'Previous Incumbent', 'Natural Vacancy',
+            'Date Original Appointment', 'Date of Signing', 'Eligibility Validity',
+            'Education', 'Senior High School', 'Senior High Strand', 'Non Teaching',
+        ];
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->getFont()->setBold(true);
+
+        $a = $appointment;
+        $row = [
+            $a->transaction_number,
+            $a->last_name,
+            $a->first_name,
+            $a->middle_name,
+            $a->extension_name,
+            $a->full_name,
+            $a->position_title,
+            $a->salary_grade_and_step,
+            $a->employee_status,
+            $a->school_district,
+            $a->school,
+            $a->plantilla_item_number,
+            $a->plantilla_page_number,
+            $a->compensation_words,
+            $a->compensation_numbers,
+            $a->nature_of_appointment,
+            $a->previous_incumbent ?: 'Vacant',
+            $a->natural_vacancy ?: 'N/A',
+            $this->formatDate($a->date_original_appointment),
+            $this->formatDate($a->date_of_signing),
+            $this->formatDate($a->eligibility_validity),
+            $a->education,
+            $a->senior_high_school,
+            $a->senior_high_strand,
+            $a->non_teaching,
+        ];
+
+        $sheet->fromArray($row, null, 'A2');
+
+        foreach ($sheet->getColumnIterator() as $column) {
+            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
+        }
+
+        $sheet->setAutoFilter($sheet->calculateWorksheetDimension());
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($outputPath);
+
+        if (! File::exists($outputPath)) {
+            throw new RuntimeException('Combined data Excel could not be generated.');
+        }
+
+        return $outputPath;
+    }
+
+    private function formatDate($value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        return \Carbon\Carbon::parse($value)->format('Y-m-d');
+    }
+
+    private function formatDateTime($value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        return \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
     }
 
     private function tryEvaluateWorkflow(Appointment $appointment): void

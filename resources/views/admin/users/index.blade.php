@@ -144,7 +144,7 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initUserDeactivationModal() {
             const modal = document.getElementById('deactivate-confirm-modal');
             const title = document.getElementById('deactivate-confirm-title');
             const text = document.getElementById('deactivate-confirm-text');
@@ -185,6 +185,18 @@
                     pendingForm.submit();
                 }
             });
-        });
+        }
+
+        function initializeUserDeactivationModalSafely() {
+            window.requestAnimationFrame(function () {
+                initUserDeactivationModal();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeUserDeactivationModalSafely);
+        document.addEventListener('hr:page:load', initializeUserDeactivationModalSafely);
+        if (document.readyState !== 'loading') {
+            initializeUserDeactivationModalSafely();
+        }
     </script>
 @endsection

@@ -63,7 +63,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{appointment}/rai/download', [AppointmentController::class, 'downloadRai'])->name('downloadRai');
             Route::get('/{appointment}/final-deliberation/download', [AppointmentController::class, 'downloadFinalDeliberation'])->name('downloadFinalDeliberation');
             Route::match(['get', 'post'], '/export/csv', [AppointmentController::class, 'exportCsv'])->name('export');
-            Route::post('/print', [AppointmentController::class, 'print'])->name('print');
+            Route::post('/export/monitoring', [AppointmentController::class, 'exportMonitoringCsv'])->name('archive.exportMonitoring');
         });
 
         // Records only: the single narrow field edit.
@@ -109,4 +109,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/passwords', [UserController::class, 'passwords'])->name('passwords.index');
         Route::post('/passwords/{user}', [UserController::class, 'resetPassword'])->name('passwords.reset');
     });
+
+    // Public invitation confirmation (no auth required).
+    Route::get('/invitation/accept/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->name('invitation.accept');
+    Route::post('/invitation/accept/{token}', [\App\Http\Controllers\InvitationController::class, 'accept'])->name('invitation.confirm');
 });

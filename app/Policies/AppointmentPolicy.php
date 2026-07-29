@@ -20,6 +20,10 @@ class AppointmentPolicy
 
     public function view(User $user, Appointment $appointment): bool
     {
+        if ($user->isHr()) {
+            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
+        }
+
         return in_array($user->role, Role::values());
     }
 
@@ -37,7 +41,11 @@ class AppointmentPolicy
      */
     public function update(User $user, Appointment $appointment): bool
     {
-        return $user->isHr() || $user->isAdmin();
+        if ($user->isHr()) {
+            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
+        }
+
+        return $user->isAdmin();
     }
 
     /**
@@ -51,21 +59,33 @@ class AppointmentPolicy
     }
 
     /**
-     * HR-specific actions from your spec: print documents, set Date of Signing, archive.
+     * Set Date of Signing and archive.
      */
-    public function print(User $user, Appointment $appointment): bool
-    {
-        return $user->isHr() || $user->isAdmin();
-    }
-
     public function setDateOfSigning(User $user, Appointment $appointment): bool
     {
-        return $user->isHr() || $user->isAdmin();
+        if ($user->isHr()) {
+            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
+        }
+
+        return $user->isAdmin();
+    }
+
+    public function print(User $user, Appointment $appointment): bool
+    {
+        if ($user->isHr()) {
+            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
+        }
+
+        return $user->isAdmin();
     }
 
     public function archive(User $user, Appointment $appointment): bool
     {
-        return $user->isHr() || $user->isAdmin();
+        if ($user->isHr()) {
+            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
+        }
+
+        return $user->isAdmin();
     }
 
     /**

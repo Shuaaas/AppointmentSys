@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', 'Dashboard') – HR Recruitment</title>
+<title>@yield('title', 'Dashboard')</title>
 <link rel="icon" href="{{ asset('deped_logo.png') }}" type="image/png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -92,7 +92,7 @@
             <button type="button" class="btn-icon" id="hrSidebarToggleBtn" aria-label="Toggle sidebar">
                 <i class="ti ti-menu" aria-hidden="true" title="Toggle sidebar"></i>
             </button>
-            <a href="{{ route('dashboard.index') }}" class="btn-icon" aria-label="Go to dashboard">
+            <a href="{{ auth()->user()?->isRecords() ? route('appointments.index') : route('dashboard.index') }}" class="btn-icon" aria-label="Go to dashboard">
                 <i class="ti ti-home" aria-hidden="true" title="Go to dashboard"></i>
             </a>
         </div>
@@ -336,18 +336,64 @@
         });
     }
 
+    function reinsertScripts(container, sourceContainer) {
+        if (!container || !sourceContainer) return;
+
+        container.querySelectorAll('script').forEach(function (script) {
+            script.remove();
+        });
+
+        sourceContainer.querySelectorAll('script').forEach(function (old) {
+            const s = document.createElement('script');
+            if (old.src) {
+                s.src = old.src;
+                s.async = false;
+            } else {
+                s.textContent = old.textContent;
+            }
+            container.appendChild(s);
+        });
+    }
+
     function reinitScripts(doc) {
-        const cur = document.getElementById('hr-scripts');
-        const next = doc.getElementById('hr-scripts');
-        if (cur && next) {
-            cur.innerHTML = '';
-            next.querySelectorAll('script').forEach(function (old) {
-                const s = document.createElement('script');
-                if (old.src) s.src = old.src;
-                else s.textContent = old.textContent;
-                cur.appendChild(s);
-            });
+        // 1. Refresh CSRF token from new page so subsequent POST requests stay valid.
+        var newCsrfMeta = doc.querySelector('meta[name="csrf-token"]');
+        var curCsrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (newCsrfMeta && curCsrfMeta) {
+            var freshToken = newCsrfMeta.getAttribute('content');
+            curCsrfMeta.setAttribute('content', freshToken);
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = freshToken;
+            }
         }
+
+        // 2. Replace modals FIRST so that hr-scripts and main scripts can
+        //    safely reference modal DOM elements (e.g. overlay close handlers).
+        var curModals = document.getElementById('hr-modals');
+        var nextModals = doc.getElementById('hr-modals');
+        if (curModals && nextModals) {
+            curModals.innerHTML = nextModals.innerHTML;
+            reinsertScripts(curModals, nextModals);
+        }
+
+        // 3. Re-run page-level scripts (openEditWizard, etc.) – modals are
+        //    already in the DOM at this point.
+        var cur = document.getElementById('hr-scripts');
+        var next = doc.getElementById('hr-scripts');
+        if (cur && next) {
+            reinsertScripts(cur, next);
+        }
+
+        // 4. Re-run any scripts embedded inside main content.
+        var curMain = document.querySelector('main.content') || document.querySelector('main');
+        var nextMain = doc.querySelector('main.content') || doc.querySelector('main');
+        if (curMain && nextMain) {
+            reinsertScripts(curMain, nextMain);
+        }
+    }
+
+    function triggerPageLoadEvents() {
+        document.dispatchEvent(new Event('hr:page:load'));
     }
 
     let navToken = 0;
@@ -365,19 +411,9 @@
                 const curMain = document.querySelector('main.content') || document.querySelector('main');
                 if (newMain && curMain) curMain.innerHTML = newMain.innerHTML;
 
-                const newModals = doc.getElementById('hr-modals');
-                const curModals = document.getElementById('hr-modals');
-                if (newModals && curModals) {
-                    curModals.innerHTML = newModals.innerHTML;
-                    newModals.querySelectorAll('script').forEach(function (old) {
-                        const s = document.createElement('script');
-                        if (old.src) s.src = old.src;
-                        else s.textContent = old.textContent;
-                        curModals.appendChild(s);
-                    });
-                }
-
                 reinitScripts(doc);
+
+                triggerPageLoadEvents();
 
                 document.title = doc.title;
                 const newTitle = doc.querySelector('.hr-page-title');
@@ -386,9 +422,6 @@
 
                 setActiveNav(url);
                 if (push !== false) history.pushState({ url: url }, '', url);
-
-                // Re-run per-page initialisers that wait for DOMContentLoaded.
-                document.dispatchEvent(new Event('DOMContentLoaded'));
             })
             .catch(function () {
                 if (token === navToken) window.location.href = url; // fall back to full load

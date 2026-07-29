@@ -7,13 +7,16 @@ use App\Http\Requests\Appointment\ConcludeAppointmentRequest;
 use App\Http\Requests\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Appointment\UpdateTransactionNumberRequest;
 use App\Models\Appointment;
+use App\Models\User;
 use App\Services\Appointment\DocumentExportService;
 use App\Services\AppointmentFormService;
 use App\Traits\GeneratesSafeFilename;
 use App\Traits\TracksDocumentDownload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
+use ZipArchive;
 
 class AppointmentController extends Controller
 {
@@ -28,7 +31,14 @@ class AppointmentController extends Controller
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $availableDates = Appointment::active()
+        $hrUsers = User::where('role', 'hr')->get();
+        $selectedHrUserId = $request->query('hr_user');
+
+        $availableDates = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
+            ->active()
             ->selectRaw('DATE(encoded_at) as d')
             ->distinct()
             ->orderByDesc('d')
@@ -39,14 +49,17 @@ class AppointmentController extends Controller
         $selectedNature = $request->query('nature');
         $selectedTab    = $request->query('tab', 'needs');
 
-        // Completed records move to Archive, so HR and Manager no longer see
-        // them in Appointment Data — only active/in-progress remain.
         $visibleStates = ['new', 'active', 'in_progress', 'completed'];
         if ($request->user()->isHr() || $request->user()->isManager()) {
             $visibleStates = ['new', 'active', 'in_progress'];
         }
 
-        $appointmentsQuery = Appointment::whereIn('record_state', $visibleStates)
+        $appointmentsQuery = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
+            ->whereIn('record_state', $visibleStates)
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
             ->when($selectedStatus, function ($q, $selectedStatus) {
                 match ($selectedStatus) {
                     'active'      => $q->whereIn('record_state', ['new', 'active']),
@@ -59,8 +72,9 @@ class AppointmentController extends Controller
             ->when($selectedDate,   fn ($q) => $q->whereDate('encoded_at', $selectedDate))
             ->search($request->query('q'));
 
-        if ($request->user()->isRecords()) {
+        if ($request->user()->isRecords() || $request->user()->isManager()) {
             $appointmentsQuery = $appointmentsQuery
+                ->whereNotNull('user_id')
                 ->when(
                     $selectedTab === 'needs',
                     fn ($q) => $q->where('record_state', 'in_progress')
@@ -76,25 +90,43 @@ class AppointmentController extends Controller
 
         $appointments = $appointmentsQuery->orderByDesc('encoded_at')->get();
 
-        $needsTNCount = Appointment::whereIn('record_state', $visibleStates)
+        $needsTNCount = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
             ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->where('record_state', 'in_progress'), fn ($q) => $q->whereIn('record_state', $visibleStates))
             ->count();
 
-        $completedCount = Appointment::whereIn('record_state', $visibleStates)
+        $completedCount = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
+            ->whereIn('record_state', $visibleStates)
             ->whereNotNull('transaction_number')
             ->where('transaction_number', '<>', '')
             ->count();
 
-        $completedTodayCount = Appointment::whereIn('record_state', $visibleStates)
+        $completedTodayCount = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
+            ->whereIn('record_state', $visibleStates)
             ->whereNotNull('transaction_number')
             ->where('transaction_number', '<>', '')
             ->whereDate('updated_at', now())
             ->count();
 
-        $monthlyTotalCount = Appointment::whereIn('record_state', $visibleStates)
+        $monthlyTotalCount = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
+            ->whereIn('record_state', $visibleStates)
             ->whereYear('encoded_at', now()->year)
             ->whereMonth('encoded_at', now()->month)
             ->count();
+
+        $selectedHrUser = $selectedHrUserId ? User::find($selectedHrUserId) : null;
 
         return view('appointments.index', [
             'appointments'        => $appointments,
@@ -108,6 +140,8 @@ class AppointmentController extends Controller
             'completedCount'      => $completedCount,
             'completedTodayCount' => $completedTodayCount,
             'monthlyTotalCount'   => $monthlyTotalCount,
+            'hrUsers'             => $hrUsers,
+            'selectedHrUser'      => $selectedHrUser,
         ]);
     }
 
@@ -132,6 +166,7 @@ class AppointmentController extends Controller
 
         $data                       = $request->validated();
         $data['encoding_personnel'] = $data['encoding_personnel'] ?? auth()->user()->name ?? 'HRMO Offline Admin';
+        $data['user_id']            = auth()->id();
         $data['record_state']       = 'active';
 
         $appointment = Appointment::create($data);
@@ -181,14 +216,29 @@ class AppointmentController extends Controller
     ): RedirectResponse {
         $this->authorize('updateTransactionNumber', $appointment);
 
+        $newTxn = $request->transaction_number;
+
+        $existing = Appointment::query()
+            ->where('transaction_number', $newTxn)
+            ->where('id', '!=', $appointment->id)
+            ->exists();
+
+        if ($existing) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('duplicate_txn', $newTxn)
+                ->with('duplicate_txn_name', $appointment->full_name);
+        }
+
         $appointment->update([
-            'transaction_number' => $request->transaction_number,
+            'transaction_number' => $newTxn,
             'record_state'       => 'completed',
         ]);
 
         return redirect()
             ->route('appointments.index')
-            ->with('tn_saved', $request->transaction_number)
+            ->with('tn_saved', $newTxn)
             ->with('tn_name', $appointment->full_name);
     }
 
@@ -258,7 +308,10 @@ class AppointmentController extends Controller
         $from = $request->query('from');
         $to   = $request->query('to');
 
-        $appointments = Appointment::where('record_state', 'completed')
+        $appointments = Appointment::query()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
+            ->where('record_state', 'completed')
             ->historyBetween($from, $to)
             ->search($request->query('q'))
             ->orderByDesc('updated_at')
@@ -425,35 +478,17 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Render a print-friendly view for the selected appointment records.
-     * The actual browser print dialog is triggered from the returned view.
-     * Policy: HR only (same guard as the other document/export routes).
-     */
-    public function print(Request $request): View
-    {
-        abort_unless($request->user()->isHr(), 403, 'Only HR can print appointment records.');
-
-        $ids = $request->input('ids', []);
-        if (! is_array($ids)) {
-            $ids = [];
-        }
-
-        $appointments = Appointment::whereIn('id', $ids)
-            ->orderByDesc('encoded_at')
-            ->get();
-
-        return view('appointments.print', [
-            'appointments' => $appointments,
-            'generatedAt'  => now(),
-        ]);
-    }
-
-    /**
      * Generate and stream a ZIP bundle for the selected appointment IDs.
      */
     private function exportBulkZip(array $ids, DocumentExportService $exportService): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $appointments = Appointment::whereIn('id', $ids)->get();
+        $query = Appointment::whereIn('id', $ids);
+
+        if (auth()->user()?->isHr()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $appointments = $query->get();
 
         if ($appointments->isEmpty()) {
             abort(404, 'No appointments found for selected IDs.');
@@ -472,7 +507,11 @@ class AppointmentController extends Controller
      */
     private function streamCsvExport(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $appointments = Appointment::active()->orderByDesc('encoded_at')->get();
+        $appointments = Appointment::query()
+            ->when(auth()->user()?->isHr(), fn ($q) => $q->where('user_id', auth()->id()))
+            ->active()
+            ->orderByDesc('encoded_at')
+            ->get();
 
         $columns = [
             'Transaction Number', 'Last Name', 'First Name', 'Middle Name',
@@ -511,5 +550,79 @@ class AppointmentController extends Controller
             'appointments_' . now()->format('Y-m-d_His') . '.csv',
             ['Content-Type' => 'text/csv']
         );
+    }
+
+    /**
+     * Export monitoring data for selected archived appointments using the
+     * SAMPLE MONITORING.xlsx template, bundled into a ZIP archive.
+     */
+    public function exportMonitoringCsv(Request $request, AppointmentFormService $formService): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $this->authorize('viewAny', Appointment::class);
+
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            abort(404, 'No appointments selected for monitoring export.');
+        }
+
+        $query = Appointment::whereIn('id', $ids)
+            ->where('record_state', 'completed');
+
+        if (auth()->user()?->isHr()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $appointments = $query->get();
+
+        if ($appointments->isEmpty()) {
+            abort(404, 'No archived appointments found for selected IDs.');
+        }
+
+        $outputDirectory = storage_path('app/temp/appointment-forms');
+        File::ensureDirectoryExists($outputDirectory);
+
+        $files = [];
+
+        foreach ($appointments as $appointment) {
+            try {
+                $path = $formService->generateMonitoring($appointment);
+                $txn = $appointment->transaction_number ?? $appointment->id;
+                $name = 'monitoring_' . $txn . '_' . $appointment->id . '.xlsx';
+                $files[] = ['path' => $path, 'name' => $name];
+            } catch (\Throwable $e) {
+                \Log::error("Failed to generate monitoring for appointment {$appointment->id}: {$e->getMessage()}");
+            }
+        }
+
+        if (empty($files)) {
+            abort(500, 'Failed to generate any monitoring documents.');
+        }
+
+        $zipName = 'monitoring_export_' . now()->format('Ymd_His') . '.zip';
+        $zipPath = $outputDirectory . DIRECTORY_SEPARATOR . $zipName;
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new RuntimeException('Unable to create monitoring ZIP archive.');
+        }
+
+        foreach ($files as $file) {
+            $zip->addFile($file['path'], $file['name']);
+        }
+
+        $zip->close();
+
+        foreach ($files as $file) {
+            try {
+                @unlink($file['path']);
+            } catch (\Throwable $e) {
+                // Ignore cleanup failures
+            }
+        }
+
+        return response()->download($zipPath, $zipName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
     }
 }

@@ -96,16 +96,7 @@
         </table>
     </div>
     <div class="footer-bar">
-        <span>
-            @if ($history->total() > 0)
-                Showing {{ $history->firstItem() }}–{{ $history->lastItem() }} of {{ $history->total() }} result{{ $history->total() !== 1 ? 's' : '' }}
-            @else
-                No results found.
-            @endif
-        </span>
-        <div class="pagination-links">
-            {{ $history->withQueryString()->links() }}
-        </div>
+        {{ $history->withQueryString()->links('vendor.pagination.pams') }}
     </div>
 </div>
 @endsection

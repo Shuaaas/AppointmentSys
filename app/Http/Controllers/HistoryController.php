@@ -18,6 +18,8 @@ class HistoryController extends Controller
         $to   = $request->query('to');
 
         $history = Appointment::withTrashed()
+            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
             ->historyBetween($from, $to)
             ->search($request->query('q'))
             ->orderByDesc('encoded_at')

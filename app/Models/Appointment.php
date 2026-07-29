@@ -12,7 +12,7 @@ class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
     
-    protected $appends = ['display_record_state'];
+    protected $appends = ['display_record_state', 'salary_grade_and_step'];
 
     protected $fillable = [
         'transaction_number',
@@ -24,6 +24,7 @@ class Appointment extends Model
         'date_of_birth',
         'tin',
         'pwd',
+        'type_of_disability',
         'ip_group_member',
         'ethnicity',
         'position_title',
@@ -59,6 +60,10 @@ class Appointment extends Model
         'date_last_promotion',
         'natural_vacancy',
         'date_of_signing',
+        'publication_date_from',
+        'publication_date_to',
+        'assessment_date',
+        'deliberation_date',
         'education',
         'senior_high_school',
         'senior_high_strand',
@@ -72,11 +77,12 @@ class Appointment extends Model
         'final_deliberation_downloaded_at',
         'encoding_personnel',
         'encoded_at',
+        'user_id',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
-        'position_from' => 'date',
+        'position_from' => 'string',
         'position_to' => 'date',
         'date_received_records' => 'date',
         'date_received_hr' => 'date',
@@ -102,6 +108,18 @@ class Appointment extends Model
                 $appointment->encoded_at = now();
             }
         });
+
+        static::saving(function (Appointment $appointment) {
+            if (empty($appointment->salary_grade) && ! empty($appointment->position_title)) {
+                $appointment->salary_grade = static::positionToSalaryGrade($appointment->position_title);
+            }
+        });
+    }
+
+    /* ── Relationships ── */
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /* ── Accessors ── */
@@ -128,6 +146,18 @@ class Appointment extends Model
             'concluded' => 'Concluded',
             default => ucfirst($state),
         };
+    }
+
+    public function getSalaryGradeAndStepAttribute(): ?string
+    {
+        $grade = preg_replace('/[^0-9]/', '', (string) ($this->salary_grade ?? ''));
+        $step = preg_replace('/[^0-9]/', '', (string) ($this->salary_grade_step ?? ''));
+
+        if ($grade === '' && $step === '') {
+            return null;
+        }
+
+        return trim(($grade ?: '') . ($grade && $step ? '-' : '') . ($step ?: ''));
     }
 
     public function markDownloaded(string $type): void
@@ -214,7 +244,86 @@ class Appointment extends Model
               ->orWhere('school_district', 'like', "%{$term}%")
               ->orWhere('eligibility_type', 'like', "%{$term}%")
               ->orWhere('nature_of_appointment', 'like', "%{$term}%")
-              ->orWhere('reason', 'like', "%{$term}%");
+               ->orWhere('reason', 'like', "%{$term}%");
         });
+    }
+
+    public static function positionToSalaryGrade(string $position): string
+    {
+        $map = [
+            'ACCOUNTANT I' => '12',
+            'ACCOUNTANT III' => '19',
+            'ADMINISTRATIVE AIDE I' => '1',
+            'ADMINISTRATIVE AIDE III' => '3',
+            'ADMINISTRATIVE AIDE IV' => '4',
+            'ADMINISTRATIVE AIDE VI' => '6',
+            'ADMINISTRATIVE ASSISTANT I' => '7',
+            'ADMINISTRATIVE ASSISTANT II' => '8',
+            'ADMINISTRATIVE ASSISTANT III' => '9',
+            'ADMINISTRATIVE OFFICER I' => '10',
+            'ADMINISTRATIVE OFFICER II' => '11',
+            'ADMINISTRATIVE OFFICER IV' => '15',
+            'ADMINISTRATIVE OFFICER V' => '18',
+            'ASSISTANT SCHOOL PRINCIPAL II' => '19',
+            'ASSISTANT SCHOOL PRINCIPAL III' => '20',
+            'ASSISTANT SCHOOLS DIVISION SUPERINTENDENT' => '25',
+            'ATTORNEY III' => '21',
+            'CHIEF EDUCATION SUPERVISOR' => '24',
+            'DENTAL AIDE' => '4',
+            'DENTIST II' => '17',
+            'EDUCATION PROGRAM SPECIALIST II' => '16',
+            'EDUCATION PROGRAM SUPERVISOR' => '22',
+            'ENGINEER III' => '19',
+            'FARM WORKER I' => '2',
+            'GUIDANCE COORDINATOR III' => '13',
+            'GUIDANCE COUNSELOR I' => '11',
+            'GUIDANCE COUNSELOR II' => '12',
+            'GUIDANCE COUNSELOR III' => '13',
+            'HANDICRAFT WORKER II' => '5',
+            'HEAD TEACHER I' => '14',
+            'HEAD TEACHER II' => '15',
+            'HEAD TEACHER III' => '16',
+            'HEAD TEACHER IV' => '17',
+            'HEAD TEACHER VI' => '19',
+            'INFORMATION TECHNOLOGY OFFICER I' => '19',
+            'LABORATORY TECHNICIAN I' => '6',
+            'LEGAL ASSISTANT I' => '10',
+            'LIBRARIAN II' => '15',
+            'MASTER TEACHER I' => '18',
+            'MASTER TEACHER II' => '19',
+            'MEDICAL OFFICER II' => '18',
+            'MEDICAL OFFICER III' => '21',
+            'NURSE II' => '16',
+            'PLANNING OFFICER III' => '18',
+            'PROJECT DEVELOPMENT OFFICER I' => '11',
+            'PROJECT DEVELOPMENT OFFICER II' => '15',
+            'PUBLIC SCHOOLS DISTRICT SUPERVISOR' => '22',
+            'REGISTRAR I' => '11',
+            'SCHOOL LIBRARIAN I' => '11',
+            'SCHOOL LIBRARIAN II' => '15',
+            'SCHOOL LIBRARIAN III' => '18',
+            'SCHOOL PRINCIPAL I' => '19',
+            'SCHOOL PRINCIPAL II' => '20',
+            'SCHOOL PRINCIPAL III' => '21',
+            'SCHOOL PRINCIPAL IV' => '22',
+            'SCHOOLS DIVISION SUPERINTENDENT' => '26',
+            'SECURITY GUARD I' => '3',
+            'SECURITY GUARD II' => '5',
+            'SENIOR EDUCATION PROGRAM SPECIALIST' => '19',
+            'SPECIAL EDUCATION TEACHER I' => '14',
+            'SPECIAL EDUCATION TEACHER II' => '15',
+            'SPECIAL EDUCATION TEACHER III' => '16',
+            'SPECIAL SCIENCE TEACHER I' => '13',
+            'TEACHER I' => '11',
+            'TEACHER II' => '12',
+            'TEACHER III' => '13',
+            'TEACHER IV' => '14',
+            'TEACHER V' => '15',
+            'WATCHMAN I' => '2',
+        ];
+
+        $key = strtoupper(trim($position));
+
+        return $map[$key] ?? '';
     }
 }
