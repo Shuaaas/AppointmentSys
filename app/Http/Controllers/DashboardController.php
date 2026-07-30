@@ -12,7 +12,7 @@ class DashboardController extends Controller
     ) {}
 
     /**
-     * Display the main dashboard for HR, Manager, and Admin users.
+     * Display the main dashboard for HR and Admin users.
      * Data aggregation is fully delegated to DashboardService.
      */
     public function index(): View

@@ -299,7 +299,7 @@
         </div>
     </div>
 
-        @if (auth()->user()?->isHr() || auth()->user()?->isManager())
+        @if (auth()->user()?->isHr())
         <div class="dash-grid full-width" style="margin-top: 18px;">
             <div class="dash-card">
                 <div class="dash-card-title">Recently encoded</div>

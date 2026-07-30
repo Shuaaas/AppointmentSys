@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Fixed set of 4 roles. Assigned only by Admin — never chosen by the user.
-            $table->enum('role', ['hr', 'records', 'manager', 'admin'])
-                ->default('records')
+            // Fixed set of 2 roles. Assigned only by Admin — never chosen by the user.
+            $table->enum('role', ['hr', 'admin'])
+                ->default('hr')
                 ->after('email');
 
             $table->boolean('is_active')->default(true)->after('role');

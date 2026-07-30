@@ -24,20 +24,14 @@ class AppointmentController extends Controller
 
     /**
      * List view — defaults to the latest encoded date only.
-     * All 4 roles can view (HR, Records, Manager, Admin) — the policy's
-     * viewAny() allows this; write actions below are what's actually gated.
+     * HR sees their own appointments; Admin sees all via policy.
      */
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $hrUsers = User::where('role', 'hr')->get();
-        $selectedHrUserId = $request->query('hr_user');
-
         $availableDates = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
             ->active()
             ->selectRaw('DATE(encoded_at) as d')
             ->distinct()
@@ -47,19 +41,14 @@ class AppointmentController extends Controller
         $selectedDate   = $request->query('date', $availableDates->first());
         $selectedStatus = $request->query('status');
         $selectedNature = $request->query('nature');
-        $selectedTab    = $request->query('tab', 'needs');
 
         $visibleStates = ['new', 'active', 'in_progress', 'completed'];
-        if ($request->user()->isHr() || $request->user()->isManager()) {
+        if ($request->user()->isHr()) {
             $visibleStates = ['new', 'active', 'in_progress'];
         }
 
         $appointmentsQuery = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
-            ->whereIn('record_state', $visibleStates)
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
             ->when($selectedStatus, function ($q, $selectedStatus) {
                 match ($selectedStatus) {
                     'active'      => $q->whereIn('record_state', ['new', 'active']),
@@ -70,48 +59,26 @@ class AppointmentController extends Controller
             })
             ->when($selectedNature, fn ($q) => $q->where('nature_of_appointment', $selectedNature))
             ->when($selectedDate,   fn ($q) => $q->whereDate('encoded_at', $selectedDate))
+            ->when(! $selectedStatus, fn ($q) => $q->whereIn('record_state', $visibleStates))
             ->search($request->query('q'));
-
-        if ($request->user()->isRecords() || $request->user()->isManager()) {
-            $appointmentsQuery = $appointmentsQuery
-                ->whereNotNull('user_id')
-                ->when(
-                    $selectedTab === 'needs',
-                    fn ($q) => $q->where('record_state', 'in_progress')
-                                  ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-                )
-                ->when(
-                    $selectedTab === 'completed',
-                    fn ($q) => $q->where('record_state', 'completed')
-                                  ->whereNotNull('transaction_number')
-                                  ->where('transaction_number', '<>', '')
-                );
-        }
 
         $appointments = $appointmentsQuery->orderByDesc('encoded_at')->get();
 
         $needsTNCount = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
             ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->where('record_state', 'in_progress'), fn ($q) => $q->whereIn('record_state', $visibleStates))
             ->count();
 
         $completedCount = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
-            ->whereIn('record_state', $visibleStates)
+            ->whereIn('record_state', ['new', 'active', 'in_progress', 'completed'])
             ->whereNotNull('transaction_number')
             ->where('transaction_number', '<>', '')
             ->count();
 
         $completedTodayCount = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
-            ->whereIn('record_state', $visibleStates)
+            ->whereIn('record_state', ['new', 'active', 'in_progress', 'completed'])
             ->whereNotNull('transaction_number')
             ->where('transaction_number', '<>', '')
             ->whereDate('updated_at', now())
@@ -119,14 +86,9 @@ class AppointmentController extends Controller
 
         $monthlyTotalCount = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
-            ->when($request->user()->isRecords() && $selectedHrUserId, fn ($q) => $q->where('user_id', $selectedHrUserId))
-            ->whereIn('record_state', $visibleStates)
             ->whereYear('encoded_at', now()->year)
             ->whereMonth('encoded_at', now()->month)
             ->count();
-
-        $selectedHrUser = $selectedHrUserId ? User::find($selectedHrUserId) : null;
 
         return view('appointments.index', [
             'appointments'        => $appointments,
@@ -134,20 +96,17 @@ class AppointmentController extends Controller
             'selectedDate'        => $selectedDate,
             'selectedStatus'      => $selectedStatus,
             'selectedNature'      => $selectedNature,
-            'selectedTab'         => $selectedTab,
             'search'              => $request->query('q'),
             'needsTNCount'        => $needsTNCount,
             'completedCount'      => $completedCount,
             'completedTodayCount' => $completedTodayCount,
             'monthlyTotalCount'   => $monthlyTotalCount,
-            'hrUsers'             => $hrUsers,
-            'selectedHrUser'      => $selectedHrUser,
         ]);
     }
 
     /**
      * Transaction Numbers page for HR role.
-     * Shows HR's own appointments in the Records-style TN table.
+     * Shows HR's own appointments in a dedicated TN table.
      */
     public function transactionNumbers(Request $request): View
     {
@@ -242,7 +201,7 @@ class AppointmentController extends Controller
 
     /**
      * Full-record update.
-     * Policy: HR + Admin only — Records must use updateTransactionNumber() instead.
+     * Policy: HR + Admin only.
      */
     public function update(StoreAppointmentRequest $request, Appointment $appointment): RedirectResponse
     {
@@ -374,7 +333,6 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::query()
             ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->user()->isRecords() || $request->user()->isManager(), fn ($q) => $q->whereNotNull('user_id'))
             ->where('record_state', 'completed')
             ->historyBetween($from, $to)
             ->search($request->query('q'))

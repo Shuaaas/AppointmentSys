@@ -72,22 +72,10 @@ class UserService
 
     /**
      * Activate a pending user account.
-     * If the account was a Records user requesting a different role, that
-     * requested role is applied at activation time.
      */
     public function activate(User $user): User
     {
-        $update = ['is_active' => true, 'requested_role' => null];
-
-        if (
-            $user->role === 'records'
-            && $user->requested_role
-            && $user->requested_role !== 'records'
-        ) {
-            $update['role'] = $user->requested_role;
-        }
-
-        $user->update($update);
+        $user->update(['is_active' => true, 'requested_role' => null]);
 
         return $user;
     }

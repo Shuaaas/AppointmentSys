@@ -63,7 +63,7 @@
 
                             <div class="wz-field"><label>Nature of Appointment <span class="req">*</span></label>
                                 <select name="nature_of_appointment" id="f-nature" required>
-                                    <option value="">Select</option><option value="Original" {{ old('nature_of_appointment') === 'Original' ? 'selected' : '' }}>Original</option><option value="Promotion" {{ old('nature_of_appointment') === 'Promotion' ? 'selected' : '' }}>Promotion</option><option value="Demotion" {{ old('nature_of_appointment') === 'Demotion' ? 'selected' : '' }}>Demotion</option><option value="Transfer" {{ old('nature_of_appointment') === 'Transfer' ? 'selected' : '' }}>Transfer</option><option value="Re-Classification" {{ old('nature_of_appointment') === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option><option value="Re-Employment" {{ old('nature_of_appointment') === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option><option value="Re-Appointment" {{ old('nature_of_appointment') === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
+                                    <option value="">Select</option><option value="Original" {{ old('nature_of_appointment') === 'Original' ? 'selected' : '' }}>Original</option><option value="Promotion" {{ old('nature_of_appointment') === 'Promotion' ? 'selected' : '' }}>Promotion</option><option value="Demotion" {{ old('nature_of_appointment') === 'Demotion' ? 'selected' : '' }}>Demotion</option><option value="Transfer" {{ old('nature_of_appointment') === 'Transfer' ? 'selected' : '' }}>Transfer</option><option value="Reclassification" {{ old('nature_of_appointment') === 'Re-Classification' ? 'selected' : '' }}>Reclassification</option><option value="Reemployment" {{ old('nature_of_appointment') === 'Re-Employment' ? 'selected' : '' }}>Reemployment</option><option value="Reappointment" {{ old('nature_of_appointment') === 'Re-Appointment' ? 'selected' : '' }}>Reappointment</option>
                                 </select>
                             </div>
 
@@ -113,16 +113,23 @@
                             <div class="wz-field" id="strand-field" style="display:none"><label>Strand</label>
                                 <select name="senior_high_strand" id="f-strand">
                                     <option value="">Select strand</option>
-                                    <option value="ABM" {{ old('senior_high_strand') === 'ABM' ? 'selected' : '' }}>ABM</option>
-                                    <option value="HUMSS" {{ old('senior_high_strand') === 'HUMSS' ? 'selected' : '' }}>HUMSS</option>
-                                    <option value="STEM" {{ old('senior_high_strand') === 'STEM' ? 'selected' : '' }}>STEM</option>
+                                    <option value="ABM" {{ old('senior_high_strand') === 'ABM' ? 'selected' : '' }}>Academic Track - ABM</option>
+                                    <option value="HUMSS" {{ old('senior_high_strand') === 'HUMSS' ? 'selected' : '' }}>Academic Track - HUMSS</option>
+                                    <option value="STEM" {{ old('senior_high_strand') === 'STEM' ? 'selected' : '' }}>Academic Track - STEM</option>
                                     <option value="TVL Track" {{ old('senior_high_strand') === 'SHS - TVL Track' ? 'selected' : '' }}>SHS - TVL Track</option>
                                     <option value="Sports Track" {{ old('senior_high_strand') === 'SHS - Sports Track' ? 'selected' : '' }}>SHS - Sports Track</option>
                                 </select>
                             </div>
+                            <div class="wz-field" id="teaching-level-field" style="display:none"><label>Teaching Level</label>
+                                <select name="teaching_level" id="f-teaching-level">
+                                    <option value="">Select level</option>
+                                    <option value="Elementary" {{ old('teaching_level') === 'Elementary' ? 'selected' : '' }}>Elementary</option>
+                                    <option value="Secondary" {{ old('teaching_level') === 'Secondary' ? 'selected' : '' }}>Secondary</option>
+                                </select>
+                            </div>
                             <div class="wz-field"><label>Eligibility</label>
                                 <select name="eligibility_type" id="f-elig">
-                                    <option value="">Select</option><option value="LET" {{ old('eligibility_type') === 'LET' ? 'selected' : '' }}>LET</option><option value="PVET" {{ old('eligibility_type') === 'PVET' ? 'selected' : '' }}>PVET</option>
+                                    <option value="">Select</option><option value="LET" {{ old('eligibility_type') === 'LET' ? 'selected' : '' }}>LET</option><option value="PVET" {{ old('eligibility_type') === 'PVET' ? 'selected' : '' }}>PVET</option><option value="CSP" {{ old('eligibility_type') === 'CSP' ? 'selected' : '' }}>CSP</option><option value="CSSP" {{ old('eligibility_type') === 'CSSP' ? 'selected' : '' }}>CSSP</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Date of Validity of Eligibility</label><input type="date" name="eligibility_validity" id="f-eligvalid" value="{{ old('eligibility_validity') }}"></div>
@@ -145,6 +152,8 @@
                             <div class="wz-field"><label>Salary number</label><input type="text" class="wz-readonly" id="rx-rai-salnum" readonly tabindex="-1"></div>
                             <div class="wz-field"><label>Employment status</label><input type="text" class="wz-readonly" id="rx-rai-estatus" readonly tabindex="-1"></div>
                             <div class="wz-field"><label>Nature of Appointment</label><input type="text" class="wz-readonly" id="rx-rai-nature" readonly tabindex="-1"></div>
+                        <div class="wz-field" id="rai-sub-from-field" style="display:none"><label>Substitute (FROM)</label><input type="date" name="substitute_from" id="rx-rai-sub-from"></div>
+                        <div class="wz-field" id="rai-sub-to-field" style="display:none"><label>Substitute (TO)</label><input type="date" name="substitute_to" id="rx-rai-sub-to"></div>
                         </div>
                     </div>
 
@@ -176,7 +185,7 @@
                             <div class="wz-field span2"><label>Name of Previous Incumbent</label><input type="text" name="previous_incumbent" id="f-prev" placeholder="Full name" value="{{ old('previous_incumbent') }}"></div>
                             <div class="wz-field"><label>Position Level <span class="req">*</span></label>
                                 <select name="position_level" id="f-poslevel" required>
-                                    <option value="">Select</option><option value="First Level" {{ old('position_level') === 'First Level' ? 'selected' : '' }}>First Level</option><option value="Second Level" {{ old('position_level') === 'Second Level' ? 'selected' : '' }}>Second Level</option><option value="Third Level" {{ old('position_level') === 'Third Level' ? 'selected' : '' }}>Third Level</option>
+                                    <option value="">Select</option><option value="First Level" {{ old('position_level') === 'First Level' ? 'selected' : '' }}>1ST</option><option value="Second Level" {{ old('position_level') === 'Second Level' ? 'selected' : '' }}>2ND</option><option value="Third Level" {{ old('position_level') === 'Third Level' ? 'selected' : '' }}>3RD</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Sex <span class="req">*</span></label>
@@ -282,6 +291,11 @@ function syncReadonly() {
     set('rx-rai-plantilla', wg('f-plantilla-item'));  set('rx-rai-sg', wg('f-sg') && wg('f-step') ? wg('f-sg') + '-' + wg('f-step') : (wg('f-sg') || '—'));
     set('rx-rai-salnum', wg('f-salnums'));  set('rx-rai-estatus', wg('f-estatus'));
     set('rx-rai-nature', wg('f-nature'));
+    const raiSubFromEl = document.getElementById('rx-rai-sub-from');
+    const raiSubToEl = document.getElementById('rx-rai-sub-to');
+    const isSubOrProv = wg('f-estatus') === 'Substitute' || wg('f-estatus') === 'Provisional';
+    if (raiSubFromEl && !raiSubFromEl.value) raiSubFromEl.value = isSubOrProv ? (wg('f-pubdate-from') || '') : '';
+    if (raiSubToEl && !raiSubToEl.value) raiSubToEl.value = isSubOrProv ? (wg('f-pubdate-to') || '') : '';
 
     set('rx-fd-empname', name);  set('rx-fd-pos', wg('f-pos'));
     set('rx-fd-dosign', wg('f-dosign'));  set('rx-fd-school', wg('f-school-new'));
@@ -309,7 +323,9 @@ function syncReadonly() {
 function syncDateFieldsByStatus() {
     const estatus = document.getElementById('f-estatus');
     const groups = document.querySelectorAll('.wz-date-group');
-    if (!estatus || !groups.length) return;
+    const raiSubFrom = document.getElementById('rai-sub-from-field');
+    const raiSubTo = document.getElementById('rai-sub-to-field');
+    if (!estatus) return;
 
     const status = estatus.value.trim().toLowerCase();
     const isNonPermanent = status === 'substitute' || status === 'provisional';
@@ -327,6 +343,9 @@ function syncDateFieldsByStatus() {
             naField.style.display = 'none';
         }
     });
+
+    if (raiSubFrom) raiSubFrom.style.display = isNonPermanent ? 'block' : 'none';
+    if (raiSubTo) raiSubTo.style.display = isNonPermanent ? 'block' : 'none';
 }
 
 function fdResult() {
@@ -356,7 +375,7 @@ function wzBuildReview() {
             ['Employee name', rxv('rx-cl-empname')], ['Position', rxv('rx-cl-pos')],
             ['Salary grade', rxv('rx-cl-sg')], ['Salary number', rxv('rx-cl-salnum')],
             ['Date of signing', rxv('rx-cl-dosign')],
-            ['Education', wg('f-education')], ['Senior high school?', wg('f-shs')], ['Strand', wg('f-strand')],
+            ['Education', wg('f-education')], ['Senior high school?', wg('f-shs')], ['Strand', wg('f-shs') === 'No' ? 'N/A' : wg('f-strand')], ['Teaching Level', wg('f-shs') === 'No' ? wg('f-teaching-level') : 'N/A'],
             ['Eligibility', wg('f-elig')], ['Date of Validity', wg('f-eligvalid')],
             ['First time used?', wg('f-eligfirst')]
         ]},
@@ -364,7 +383,9 @@ function wzBuildReview() {
             ['Employee name', rxv('rx-rai-empname')], ['Position', rxv('rx-rai-pos')],
             ['Plantilla number', rxv('rx-rai-plantilla')], ['Salary grade', rxv('rx-rai-sg')],
             ['Salary number', rxv('rx-rai-salnum')], ['Employment status', rxv('rx-rai-estatus')],
-            ['Appointment nature', rxv('rx-rai-nature')]
+            ['Appointment nature', rxv('rx-rai-nature')],
+            ['Substitute (FROM)', rxv('rx-rai-sub-from') || (rxv('rx-rai-estatus') === 'Substitute' || rxv('rx-rai-estatus') === 'Provisional' ? 'N/A' : '')],
+            ['Substitute (TO)', rxv('rx-rai-sub-to') || (rxv('rx-rai-estatus') === 'Substitute' || rxv('rx-rai-estatus') === 'Provisional' ? 'N/A' : '')]
         ]},
         { title: 'Final Deliberation', rows: [
             ['Employee name', rxv('rx-fd-empname')], ['Position', rxv('rx-fd-pos')],
@@ -455,7 +476,25 @@ function wzCloseWarning() {
 function syncChecklist() {
     const shs = document.getElementById('f-shs');
     const strand = document.getElementById('strand-field');
-    if (shs && strand) strand.style.display = shs.value === 'Yes' ? 'block' : 'none';
+    const strandSelect = document.getElementById('f-strand');
+    const teachingLevel = document.getElementById('teaching-level-field');
+    const teachingLevelSelect = document.getElementById('f-teaching-level');
+    if (shs && strand && teachingLevel) {
+        if (shs.value === 'Yes') {
+            strand.style.display = 'block';
+            teachingLevel.style.display = 'none';
+            if (teachingLevelSelect) teachingLevelSelect.value = '';
+        } else if (shs.value === 'No') {
+            strand.style.display = 'none';
+            teachingLevel.style.display = 'block';
+            if (strandSelect) strandSelect.value = 'N/A';
+        } else {
+            strand.style.display = 'none';
+            teachingLevel.style.display = 'none';
+            if (strandSelect) strandSelect.value = '';
+            if (teachingLevelSelect) teachingLevelSelect.value = '';
+        }
+    }
 }
 function syncFinalDeliberation() {
     const nt = document.getElementById('f-nonteaching');

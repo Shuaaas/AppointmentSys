@@ -46,10 +46,6 @@ class DashboardService
             $query->where('user_id', $user->id);
         }
 
-        if ($user->isRecords() || $user->isManager()) {
-            $query->whereNotNull('user_id');
-        }
-
         return $query;
     }
 
@@ -60,12 +56,12 @@ class DashboardService
      */
     public function getAppointmentStats(User $user): array
     {
-        $query = $this->scopedQuery($user)->active();
+        $baseQuery = $this->scopedQuery($user)->active();
 
         return [
-            'totalActive'      => $query->count(),
-            'permanentCount'   => $query->where('employee_status', 'Permanent')->count(),
-            'tempCount'        => $query->whereIn('employee_status', ['Substitute', 'Provisional'])->count(),
+            'totalActive'      => $baseQuery->count(),
+            'permanentCount'   => (clone $baseQuery)->where('employee_status', 'Permanent')->count(),
+            'tempCount'        => (clone $baseQuery)->whereIn('employee_status', ['Substitute', 'Provisional'])->count(),
             'encodedThisMonth' => $this->countEncodedThisMonth($user),
         ];
     }

@@ -64,22 +64,12 @@ class User extends Authenticatable
     {
         return $this->role === Role::Hr->value;
     }
- 
-    public function isRecords(): bool
-    {
-        return $this->role === Role::Records->value;
-    }
- 
-    public function isManager(): bool
-    {
-        return $this->role === Role::Manager->value;
-    }
- 
+
     public function isAdmin(): bool
     {
         return $this->role === Role::Admin->value;
     }
- 
+
     public function hasRole(string $role): bool
     {
         return $this->role === $role;

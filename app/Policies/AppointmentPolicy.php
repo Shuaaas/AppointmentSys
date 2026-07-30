@@ -10,8 +10,6 @@ class AppointmentPolicy
 {
     /**
      * All roles can view the appointment list/table.
-     * Manager sees it read-only; enforcement of "read-only" happens
-     * in update()/create()/delete() below, not here.
      */
     public function viewAny(User $user): bool
     {
@@ -36,8 +34,7 @@ class AppointmentPolicy
     }
 
     /**
-     * Full-record update. Records role is deliberately excluded here —
-     * they get a separate, narrower permission below (updateTransactionNumber).
+     * Full-record update. Only HR (own records) and Admin.
      */
     public function update(User $user, Appointment $appointment): bool
     {
@@ -107,18 +104,5 @@ class AppointmentPolicy
     public function forceDelete(User $user, Appointment $appointment): bool
     {
         return $user->isAdmin();
-    }
-
-    /**
-     * Manager gets NO write access at all — explicit deny-all as a safety net
-     * in case any of the above ever gets misconfigured to include 'manager'.
-     */
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->isManager() && $ability !== 'view' && $ability !== 'viewAny') {
-            return false;
-        }
-
-        return null; // fall through to the specific method above
     }
 }

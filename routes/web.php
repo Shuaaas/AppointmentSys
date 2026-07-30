@@ -31,24 +31,18 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
-    // Dashboard access for HR, manager, and admin.
-    // Admin sees the new admin dashboard; HR still sees the traditional overview.
-    Route::middleware([EnsureUserHasRole::class.':hr,manager,admin'])->group(function () {
+    Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
     });
 
     Route::prefix('appointments')->name('appointments.')->group(function () {
 
-        // View access: HR, Records, Manager — all current non-admin roles.
-        // Manager gets read-only because AppointmentPolicy::before() denies
-        // every write ability for that role, not because it's excluded here.
-        Route::middleware([EnsureUserHasRole::class.':hr,records,manager'])->group(function () {
+        Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
             Route::get('/', [AppointmentController::class, 'index'])->name('index');
             Route::get('/archive', [AppointmentController::class, 'archive'])->name('archive');
             Route::get('/{appointment}', [AppointmentController::class, 'show'])->whereNumber('appointment')->name('show');
         });
 
-        // HR only: create, full update, archive/conclude, document generation.
         Route::middleware([EnsureUserHasRole::class.':hr'])->group(function () {
             Route::get('/create', [AppointmentController::class, 'create'])->name('create');
             Route::post('/', [AppointmentController::class, 'store'])->name('store');
@@ -68,7 +62,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/transaction-numbers', [AppointmentController::class, 'transactionNumbers'])->name('transactionNumbers');
         });
 
-        // HR and Admin: transaction number editing.
         Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
             Route::patch('/{appointment}/transaction-number', [AppointmentController::class, 'updateTransactionNumber'])
                 ->name('updateTransactionNumber');
@@ -88,13 +81,9 @@ Route::middleware('auth')->group(function () {
             Route::delete('/bulk-destroy', [AppointmentController::class, 'bulkDestroy'])
                 ->name('bulkDestroy');
         });
-
-        // Admin no longer has appointment management access here.
-        // Admin access is limited to the dedicated user management section.
     });
 
-    // History: viewable by all 4 roles (matches your earlier RBAC matrix).
-    Route::middleware([EnsureUserHasRole::class.':hr,records,manager,admin'])->group(function () {
+    Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
     });
 

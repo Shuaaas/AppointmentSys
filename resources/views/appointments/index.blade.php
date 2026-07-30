@@ -1,39 +1,10 @@
 @extends('layout.app')
 
 @section('title')
-    @if(auth()->user()?->isRecords())
-        Transaction Numbers
-    @else
-        Appointment Data
-    @endif
+    Appointment Data
 @endsection
 
 @section('content')
-@if(auth()->user()?->isRecords())
-    <div class="stat-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-        <div class="stat-card">
-            <div class="stat-head">
-                <span class="stat-label">Needs Transaction Number</span>
-                <span class="stat-icon"><i class="ti ti-file-text" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value">{{ $needsTNCount }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-head">
-                <span class="stat-label">Completed today</span>
-                <span class="stat-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value">{{ $completedTodayCount }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-head">
-                <span class="stat-label">Total this month</span>
-                <span class="stat-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value">{{ $monthlyTotalCount }}</div>
-        </div>
-    </div>
-@endif
 
 <div class="action-bar">
     <div class="toolbar-search-group">
@@ -53,11 +24,9 @@
             </select>
             <input type="hidden" name="date" value="{{ $selectedDate }}">
             <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
-            <input type="hidden" name="tab" value="{{ $selectedTab }}">
         </form>
 
         <form class="date-control" method="GET" action="{{ route('appointments.index') }}">
-            <input type="hidden" name="tab" value="{{ $selectedTab }}">
             <i class="ti ti-calendar" aria-hidden="true"></i>
             <label for="appt-date-select">Date encoded</label>
             <select id="appt-date-select" name="date" onchange="this.form.submit()">
@@ -74,8 +43,7 @@
             <input type="hidden" name="nature" value="{{ $selectedNature ?? '' }}">
         </form>
     </div>
-    @if(!auth()->user()?->isRecords() && !auth()->user()?->isManager())
-        <div class="action-bar-right">
+    <div class="action-bar-right">
             <!-- <a href="{{ route('appointments.export') }}" class="btn btn-secondary">
                 <i class="ti ti-download" aria-hidden="true"></i> Export CSV
             </a> -->
@@ -91,86 +59,19 @@
                 <i class="ti ti-plus" aria-hidden="true"></i> Add new entry
             </a>
         </div>
-    @endif
-</div>
-
-@if(auth()->user()?->isRecords())
-    <div class="table-card records-tn-card">
-        <div class="tbl-wrap">
-            <table class="records-table">
-                <colgroup>
-                    <col style="width:42px">
-                    <col style="width:260px">
-                    <col style="width:170px">
-                    <col style="width:240px">
-                    <col style="width:140px">
-                    <col style="width:120px">
-                    <col>
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>FULL NAME</th>
-                        <th>ITEM NO.</th>
-                        <th>SCHOOL / DIVISION</th>
-                        <th>NATURE OF APPT.</th>
-                        <th>DATE ENCODED</th>
-                        <th>TRANSACTION NUMBER</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($appointments as $i => $a)
-                        <tr class="data-row">
-                            <td>{{ $i + 1 }}</td>
-                        <td>
-                            <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
-                                <span class="name-text">{{ $a->full_name }}</span>
-                                @unless(auth()->user()?->isHr())<div class="tn-code">{{ $a->transaction_number }}</div>@endunless
-                            </div>
-                        </td>
-                            <td>{{ $a->plantilla_item_number ?: '—' }}</td>
-                            <td>{{ $a->school_district ?: '—' }}</td>
-                            <td><span class="badge badge-teal">{{ $a->nature_of_appointment ?: '—' }}</span></td>
-                            <td>{{ optional($a->encoded_at)->format('M j') }}</td>
-                            <td>
-                                <form method="POST" action="{{ route('appointments.updateTransactionNumber', $a) }}" class="tn-form">
-                                    @csrf
-                                    @method('PATCH')
-                                    <div class="tn-input-row">
-                                        <input type="text" name="transaction_number" value="{{ old('transaction_number', $a->transaction_number) }}" placeholder="Enter TN...">
-                                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                                    </div>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr class="no-rows">
-                            <td colspan="7" style="border-bottom:0;padding:18px 12px;">
-                                <p class="empty-note" style="margin:0;">No records found for this date.</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="footer-bar">
-            <span>Showing {{ $appointments->count() }} of {{ $appointments->count() }} result{{ $appointments->count() !== 1 ? 's' : '' }}</span>
-            <span class="footer-hint"><i class="ti ti-info-circle" aria-hidden="true"></i> You can only log the Transaction Number here. All other fields are managed by HR.</span>
-        </div>
     </div>
-@else
     <div class="table-card">
         
         <div class="tbl-wrap" style="min-height:160px">
             <table>
                 <colgroup>
-                    @unless(auth()->user()?->isManager())<col style="width:38px">@endunless<col style="width:38px"><col style="width:175px">
+                    <col style="width:38px"><col style="width:38px"><col style="width:175px">
                     <col style="width:125px"><col style="width:105px"><col style="width:105px">
                     <col style="width:105px"><col style="width:80px"><col style="width:130px">
                 </colgroup>
             <thead>
                     <tr>
-                        @unless(auth()->user()?->isManager())<th><input type="checkbox" id="select-all" aria-label="Select all rows"></th>@endunless<th>#</th><th>Full name</th><th>District</th>
+                        <th><input type="checkbox" id="select-all" aria-label="Select all rows"></th><th>#</th><th>Full name</th><th>District</th>
                     <th>Nature of appt.</th>
                     <th style="white-space:nowrap;position:relative">
                         @php
@@ -187,21 +88,21 @@
                         </button>
 
                         <div id="status-menu" style="display:none;position:absolute;right:0;top:22px;background:#fff;border:1px solid rgba(0,0,0,0.08);box-shadow:0 6px 12px rgba(0,0,0,0.06);border-radius:4px;z-index:60;min-width:140px;">
-                                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => '', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:inherit">All</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'active', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#1E90FF">Active</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'in_progress', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#FFB020">In Progress</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'completed', 'nature' => $selectedNature ?? '', 'tab' => $selectedTab]) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#28A745">Completed</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => '', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:inherit">All</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'active', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#1E90FF">Active</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'in_progress', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#FFB020">In Progress</a>
+                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'completed', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#28A745">Completed</a>
                         </div>
                     </th>
                     <th>Original appt.</th>
-                    @unless(auth()->user()?->isManager())<th>Open</th>@else<th>Eligibility</th>@endunless
+                    <th>Open</th>
                     <th>Date encoded</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($appointments as $i => $a)
                     <tr class="data-row" id="row-{{ $a->id }}">
-                        @unless(auth()->user()?->isManager())<td><input type="checkbox" class="select-row" value="{{ $a->id }}" aria-label="Select row"></td>@endunless
+                        <td><input type="checkbox" class="select-row" value="{{ $a->id }}" aria-label="Select row"></td>
                         <td style="color:var(--text-muted)">{{ $i + 1 }}</td>
                         <td>
                             <div class="name-row" style="display:inline-flex;align-items:center;gap:8px;">
@@ -225,14 +126,9 @@
                             <span class="badge {{ $statusClass }}" id="status-badge-{{ $a->id }}">{{ $a->display_record_state }}</span>
                         </td>
                         <td>{{ optional($a->date_original_appointment)->format('Y-m-d') ?? '—' }}</td>
-                        @unless(auth()->user()?->isManager())
-                            <td><button type="button" class="btn btn-secondary btn-sm open-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Expand details"><i class="ti ti-chevron-down" aria-hidden="true"></i> Expand</button></td>
-                        @else
-                            <td><span class="badge badge-teal">{{ $a->eligibility_type ?? '—' }}</span></td>
-                        @endunless
+                        <td><button type="button" class="btn btn-secondary btn-sm open-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Expand details"><i class="ti ti-chevron-down" aria-hidden="true"></i> Expand</button></td>
                         <td style="font-size:12px;color:var(--text-muted)">{{ $a->encoded_at->format('F j, Y g:i A') }}</td>
                     </tr>
-                    @unless(auth()->user()?->isManager())
                         <tr class="dropdown-row" id="detail-{{ $a->id }}">
                             <td colspan="9">
                                 <div class="drop-panel">
@@ -254,7 +150,6 @@
                                 </div>
                             </td>
                         </tr>
-                    @endunless
                 @empty
                     <tr class="no-rows">
                         <td colspan="9" style="border-bottom:0;padding:18px 12px;">
@@ -269,9 +164,7 @@
         <span>Showing {{ $appointments->count() }} of {{ $appointments->count() }} result{{ $appointments->count() !== 1 ? 's' : '' }}</span>
         <span class="footer-hint"><i class="ti ti-info-circle" aria-hidden="true"></i> Showing the latest encoded date by default — use the dropdown above to view other dates.</span>
     </div>
-</div>
-
-@endif
+    </div>
 
 @if(session('tn_saved'))
     <div class="overlay show" id="tn-saved-overlay" style="z-index:300">

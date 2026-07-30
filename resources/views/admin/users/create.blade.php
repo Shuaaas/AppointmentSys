@@ -207,8 +207,6 @@
                             <select id="role" name="role" required>
                                 <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select a role…</option>
                                 <option value="hr" {{ old('role') === 'hr' ? 'selected' : '' }}>HR Officer</option>
-                                <option value="records" {{ old('role') === 'records' ? 'selected' : '' }}>Records Officer</option>
-                                <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager</option>
                             </select>
                             @error('role') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>

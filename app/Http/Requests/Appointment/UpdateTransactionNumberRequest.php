@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Validates the payload for updating only the transaction number field.
  * Used by AppointmentController::updateTransactionNumber() — the single
- * narrow edit allowed for the Records role.
+ * narrow edit allowed for the HR role.
  */
 class UpdateTransactionNumberRequest extends FormRequest
 {

@@ -259,7 +259,7 @@ class AppointmentFormService
         $sheet->setCellValue('B' . $row, $dateStr);
         $sheet->setCellValue('C' . $row, $this->upper($appointment->last_name));
         $sheet->setCellValue('D' . $row, $this->upper($appointment->first_name));
-        $sheet->setCellValue('E' . $row, $this->upper($appointment->extension_name));
+        $sheet->setCellValue('E' . $row, $this->upper($appointment->extension_name ?: 'N/A'));
         $sheet->setCellValue('F' . $row, $this->upper($appointment->middle_name));
         $sheet->setCellValue('G' . $row, $this->upper($appointment->position_title));
         $sheet->setCellValue('H' . $row, $appointment->plantilla_item_number);
@@ -272,6 +272,8 @@ class AppointmentFormService
 
     private function raiPlaceholderValues(Appointment $appointment): array
     {
+        $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
         return [
             'last_name' => $this->upper($appointment->last_name),
             'first_name' => $this->upper($appointment->first_name),
@@ -288,10 +290,12 @@ class AppointmentFormService
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
             'date_of_appointment' => $this->date($appointment->date_original_appointment),
             'date_of_signing' => $appointment->date_of_signing ? date('m/d/Y', strtotime((string) $appointment->date_of_signing)) : '',
-            'publication_date_from' => $this->date($appointment->publication_date_from),
-            'publication_date_to' => $this->date($appointment->publication_date_to),
+            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_from),
+            'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
+            'substitute_from' => $isNonPermanent ? $this->date($appointment->publication_date_from) : 'N/A',
+            'substitute_to' => $isNonPermanent ? $this->date($appointment->publication_date_to) : 'N/A',
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
         ];
@@ -299,14 +303,16 @@ class AppointmentFormService
 
     private function finalDeliberationValues(Appointment $appointment): array
     {
+        $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
         return [
             'position' => $this->upper($appointment->position_title),
             'school' => $this->properCase($appointment->school ?: $appointment->agency_name ?? $appointment->school_district),
             'employee_name' => $this->upper($this->employeeName($appointment)),
             'date_signed' => $this->date($appointment->date_received_hr ?? now()),
             'date_of_signing' => $this->date($appointment->date_of_signing),
-            'publication_date_from' => $this->date($appointment->publication_date_from),
-            'publication_date_to' => $this->date($appointment->publication_date_to),
+            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_from),
+            'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
@@ -323,6 +329,8 @@ class AppointmentFormService
      */
     private function checklistPlaceholderValues(Appointment $appointment): array
     {
+        $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
         return [
             'employee_name' => $this->upper($this->employeeName($appointment)),
             'position' => $this->upper($appointment->position_title),
@@ -331,11 +339,12 @@ class AppointmentFormService
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
             'date_of_appointment' => $this->date($appointment->date_original_appointment),
             'date_of_signing' => $this->date($appointment->date_of_signing),
-            'publication_date_from' => $this->date($appointment->publication_date_from),
-            'publication_date_to' => $this->date($appointment->publication_date_to),
+            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_from),
+            'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
+            'teaching_level' => $appointment->senior_high_school === 'No' ? ($appointment->teaching_level ?: '') : 'N/A',
             'non_teaching' => $appointment->non_teaching ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
             'eligibility_type' => $appointment->eligibility_type ?: '',
@@ -504,6 +513,8 @@ class AppointmentFormService
 
     private function placeholderValues(Appointment $appointment): array
     {
+        $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
         return [
             'employee_name' => $this->upper($this->employeeNameForAppointmentForm($appointment)),
             'position' => $this->properCase($appointment->position_title),
@@ -520,8 +531,8 @@ class AppointmentFormService
             'plantilla_page_number' => $appointment->plantilla_page_number,
             'date_signed' => $this->date($appointment->date_received_hr ?? now()),
             'date_of_signing' => $this->date($appointment->date_of_signing),
-            'publication_date_from' => $this->date($appointment->publication_date_from),
-            'publication_date_to' => $this->date($appointment->publication_date_to),
+            'publication_date_from' => $isNonPermanent ? '' : $this->date($appointment->publication_date_from),
+            'publication_date_to' => $isNonPermanent ? '' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
             'effectivity_date' => $this->date($appointment->eligibility_validity),

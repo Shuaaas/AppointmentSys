@@ -9,10 +9,8 @@ namespace App\Enums;
  */
 enum Role: string
 {
-    case Hr      = 'hr';
-    case Records = 'records';
-    case Manager = 'manager';
-    case Admin   = 'admin';
+    case Hr    = 'hr';
+    case Admin = 'admin';
 
     /**
      * Human-readable label for display purposes.
@@ -20,10 +18,8 @@ enum Role: string
     public function label(): string
     {
         return match ($this) {
-            self::Hr      => 'HR Officer',
-            self::Records => 'Records Officer',
-            self::Manager => 'Manager',
-            self::Admin   => 'Administrator',
+            self::Hr    => 'HR Officer',
+            self::Admin => 'Administrator',
         };
     }
 
@@ -33,10 +29,8 @@ enum Role: string
     public function dashboardRoute(): string
     {
         return match ($this) {
-            self::Hr      => 'dashboard.index',
-            self::Records => 'appointments.index',
-            self::Manager => 'dashboard.index',
-            self::Admin   => 'dashboard.index',
+            self::Hr    => 'dashboard.index',
+            self::Admin => 'dashboard.index',
         };
     }
 

@@ -26,7 +26,7 @@
     </div>
 
     <div class="hr-sidebar-links">
-        @if (auth()->user()?->isAdmin() || auth()->user()?->isHr() || auth()->user()?->isManager())
+        @if (auth()->user()?->isAdmin() || auth()->user()?->isHr())
             <a href="{{ route('dashboard.index') }}" class="nav-link {{ request()->routeIs('dashboard.index') ? 'active' : '' }}" data-tooltip="Dashboard">
                 <!-- <i class="ti ti-layout-dashboard" aria-hidden="true"></i> -->
                 <i class="bi bi-grid-1x2 dashboard-icon" aria-hidden="true"></i>
@@ -48,15 +48,9 @@
                 <span class="nav-label">Reset Passwords</span>
             </a>
         @else
-            <a href="{{ route('appointments.index') }}" class="nav-link {{ request()->routeIs('appointments.index') || request()->routeIs('appointments.show') ? 'active' : '' }}" data-tooltip="{{ auth()->user()?->isRecords() ? 'Transaction Numbers' : 'Appointment Data' }}">
+            <a href="{{ route('appointments.index') }}" class="nav-link {{ request()->routeIs('appointments.index') || request()->routeIs('appointments.show') ? 'active' : '' }}" data-tooltip="Appointment Data">
                 <i class="ti ti-file-description" aria-hidden="true"></i>
-                <span class="nav-label">
-                    @if(auth()->user()?->isRecords())
-                        Transaction Numbers
-                    @else
-                        Appointment Data
-                    @endif
-                </span>
+                <span class="nav-label">Appointment Data</span>
             </a>
             @if (auth()->user()?->isHr())
                 <div class="nav-section-title">New Entry</div>
@@ -69,7 +63,7 @@
                     <span class="nav-label">Transaction Numbers</span>
                 </a>
             @endif
-            <div class="nav-section-title">Records</div>
+            <div class="nav-section-title">History</div>
             <a href="{{ route('history.index') }}" class="nav-link {{ request()->routeIs('history.*') ? 'active' : '' }}" data-tooltip="History">
                 <i class="ti ti-archive" aria-hidden="true"></i>
                 <span class="nav-label">History</span>
@@ -96,7 +90,7 @@
             <button type="button" class="btn-icon" id="hrSidebarToggleBtn" aria-label="Toggle sidebar">
                 <i class="ti ti-menu" aria-hidden="true" title="Toggle sidebar"></i>
             </button>
-            <a href="{{ auth()->user()?->isRecords() ? route('appointments.index') : route('dashboard.index') }}" class="btn-icon" aria-label="Go to dashboard">
+            <a href="{{ route('dashboard.index') }}" class="btn-icon" aria-label="Go to dashboard">
                 <i class="ti ti-home" aria-hidden="true" title="Go to dashboard"></i>
             </a>
         </div>
