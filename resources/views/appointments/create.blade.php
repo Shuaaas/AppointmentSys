@@ -125,6 +125,7 @@
                                     <option value="">Select level</option>
                                     <option value="Elementary" {{ old('teaching_level') === 'Elementary' ? 'selected' : '' }}>Elementary</option>
                                     <option value="Secondary" {{ old('teaching_level') === 'Secondary' ? 'selected' : '' }}>Secondary</option>
+                                    <option value="Not Applicable" {{ old('teaching_level') === 'Not Applicable' ? 'selected' : '' }}>Not Applicable</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Eligibility</label>

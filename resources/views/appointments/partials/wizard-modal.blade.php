@@ -129,6 +129,7 @@
                                     <option value="">Select level</option>
                                     <option value="Elementary">Elementary</option>
                                     <option value="Secondary">Secondary</option>
+                                    <option value="Not Applicable">Not Applicable</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Eligibility</label>

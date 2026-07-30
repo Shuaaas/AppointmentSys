@@ -333,11 +333,14 @@ function populateWizardForm(data) {
     setValue('f-dosign', data.date_of_signing);
     setValue('f-pubdate-from', data.publication_date_from);
     setValue('f-pubdate-to', data.publication_date_to);
+    setValue('rx-rai-sub-from', data.substitute_from);
+    setValue('rx-rai-sub-to', data.substitute_to);
     setValue('f-assessment', data.assessment_date);
     setValue('f-deliberation', data.deliberation_date);
     setValue('f-education', data.education);
     setValue('f-shs', data.senior_high_school);
     setValue('f-strand', data.senior_high_strand);
+    setValue('f-teaching-level', data.teaching_level);
     setValue('f-nonteaching', data.non_teaching);
 
     if (typeof syncReadonly === 'function') syncReadonly();
@@ -434,6 +437,12 @@ function buildAppointmentSummary(data) {
         ['Salary grade', data.salary_grade],
         ['Salary number', data.compensation_numbers],
         ['Date of signing', formatDate(data.date_of_signing)],
+        ['Senior high school?', data.senior_high_school || 'N/A'],
+        ['Strand', data.senior_high_school === 'Yes' ? (data.senior_high_strand || 'N/A') : 'N/A'],
+        ['Teaching Level', data.senior_high_school === 'No' ? (data.teaching_level || 'N/A') : 'N/A'],
+        ['Eligibility', data.eligibility_type || 'N/A'],
+        ['Date of Validity', formatDate(data.eligibility_validity)],
+        ['First time used?', data.eligibility_first_used || 'N/A'],
     ];
 
     const raiRows = [
@@ -444,6 +453,8 @@ function buildAppointmentSummary(data) {
         ['Salary number', data.compensation_numbers],
         ['Employment status', data.employee_status],
         ['Nature of Appointment', data.nature_of_appointment],
+        ['Substitute FROM', data.employee_status === 'Substitute' || data.employee_status === 'Provisional' ? formatDate(data.substitute_from) : 'N/A'],
+        ['Substitute TO', data.employee_status === 'Substitute' || data.employee_status === 'Provisional' ? formatDate(data.substitute_to) : 'N/A'],
     ];
 
     const finalDeliberationRows = [

@@ -15,6 +15,10 @@ use RuntimeException;
 class AppointmentFormService
 {
     use ConvertsNumbersToWords;
+
+    public function __construct(
+        private readonly ChecklistTemplateResolver $templateResolver
+    ) {}
     /**
      * Generate the main Appointment Form (.docx) for the given appointment.
      */
@@ -151,22 +155,7 @@ class AppointmentFormService
 
     private function checklistTemplatePath(Appointment $appointment): string
     {
-        $position = strtolower($appointment->position_title ?? '');
-
-        $map = [
-            'project development officer i' => 'template_PDOI.xlsx',
-        ];
-
-        foreach ($map as $needle => $filename) {
-            if (str_contains($position, $needle)) {
-                $path = resource_path('templates/' . $filename);
-                if (File::exists($path)) {
-                    return $path;
-                }
-            }
-        }
-
-        return resource_path('templates/Checklist.xlsx');
+        return $this->templateResolver->resolve($appointment);
     }
 
     /**
@@ -343,11 +332,16 @@ class AppointmentFormService
             'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
+            'education' => $appointment->education ?: '',
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
+            'strand' => $appointment->senior_high_strand ?: '',
             'teaching_level' => $appointment->senior_high_school === 'No' ? ($appointment->teaching_level ?: '') : 'N/A',
+            'employment_status' => $appointment->employee_status ?: '',
+            'appointment_nature' => $appointment->nature_of_appointment ?: '',
             'non_teaching' => $appointment->non_teaching ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
             'eligibility_type' => $appointment->eligibility_type ?: '',
+            'eligibility' => $appointment->eligibility_type ?: '',
             'eligibility_validity' => $this->date($appointment->eligibility_validity),
             'eligibility_first_used' => $appointment->eligibility_first_used ?: '',
         ];

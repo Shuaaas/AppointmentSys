@@ -78,7 +78,7 @@ class StoreAppointmentRequest extends FormRequest
             'education'                 => ['nullable', 'string', 'max:255'],
             'senior_high_school'        => ['nullable', 'in:Yes,No'],
             'senior_high_strand'        => ['nullable', 'string', 'max:50'],
-            'teaching_level'            => ['nullable', 'in:Elementary,Secondary'],
+            'teaching_level'            => ['nullable', 'in:Elementary,Secondary,Not Applicable'],
             'non_teaching'              => ['nullable', 'in:Yes,No'],
             'encoding_personnel'        => ['nullable', 'string', 'max:150'],
         ];
