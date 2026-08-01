@@ -22,6 +22,9 @@
                     {{-- STEP 1: Appointment --}}
                     <div class="step-panel active" id="wz-step-0">
                         <div class="wz-grid cols3">
+                            <div class="wz-field"><label>Transaction Number</label><input type="text" name="transaction_number" id="f-tn" placeholder="e.g. TN-2026-0001" value="{{ old('transaction_number') }}"></div>
+                            <div class="wz-field"><label>Date Received by Records</label><input type="date" name="date_received_records" id="f-drec" value="{{ old('date_received_records') }}"></div>
+                            <div class="wz-field"><label>Date Received by HR</label><input type="date" name="date_received_hr" id="f-dhr" value="{{ old('date_received_hr') }}"></div>
                             <div class="wz-field"><label>Employee last name <span class="req">*</span></label><input type="text" name="last_name" id="f-last" class="alpha-only" placeholder="e.g. Dela Cruz" value="{{ old('last_name') }}" required></div>
                             <div class="wz-field"><label>Employee first name <span class="req">*</span></label><input type="text" name="first_name" id="f-first" class="alpha-only" placeholder="e.g. Maria" value="{{ old('first_name') }}" required></div>
                             <div class="wz-field"><label>Middle name</label><input type="text" name="middle_name" id="f-middle" class="alpha-only" placeholder="Optional" value="{{ old('middle_name') }}"></div>
@@ -58,12 +61,12 @@
                             </div>
                             <div class="wz-field"><label>Page number</label><input type="text" name="plantilla_page_number" id="f-plantilla-page" placeholder="e.g. 12" value="{{ old('plantilla_page_number') }}"></div>
 
-                            <div class="wz-field span2"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos" value="{{ old('compensation_words') }}" readonly></div>
+                            <div class="wz-field span2"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine" value="{{ old('compensation_words') }}" readonly></div>
                             <div class="wz-field"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00" value="{{ old('compensation_numbers') }}" readonly></div>
 
                             <div class="wz-field"><label>Nature of Appointment <span class="req">*</span></label>
                                 <select name="nature_of_appointment" id="f-nature" required>
-                                    <option value="">Select</option><option value="Original" {{ old('nature_of_appointment') === 'Original' ? 'selected' : '' }}>Original</option><option value="Promotion" {{ old('nature_of_appointment') === 'Promotion' ? 'selected' : '' }}>Promotion</option><option value="Demotion" {{ old('nature_of_appointment') === 'Demotion' ? 'selected' : '' }}>Demotion</option><option value="Transfer" {{ old('nature_of_appointment') === 'Transfer' ? 'selected' : '' }}>Transfer</option><option value="Reclassification" {{ old('nature_of_appointment') === 'Re-Classification' ? 'selected' : '' }}>Reclassification</option><option value="Reemployment" {{ old('nature_of_appointment') === 'Re-Employment' ? 'selected' : '' }}>Reemployment</option><option value="Reappointment" {{ old('nature_of_appointment') === 'Re-Appointment' ? 'selected' : '' }}>Reappointment</option>
+                                    <option value="">Select</option><option value="Original" {{ old('nature_of_appointment') === 'Original' ? 'selected' : '' }}>Original</option><option value="Promotion" {{ old('nature_of_appointment') === 'Promotion' ? 'selected' : '' }}>Promotion</option><option value="Demotion" {{ old('nature_of_appointment') === 'Demotion' ? 'selected' : '' }}>Demotion</option><option value="Transfer" {{ old('nature_of_appointment') === 'Transfer' ? 'selected' : '' }}>Transfer</option><option value="Reclassification" {{ old('nature_of_appointment') === 'Reclassification' ? 'selected' : '' }}>Reclassification</option><option value="Reemployment" {{ old('nature_of_appointment') === 'Reemployment' ? 'selected' : '' }}>Reemployment</option><option value="Reappointment" {{ old('nature_of_appointment') === 'Reappointment' ? 'selected' : '' }}>Reappointment</option>
                                 </select>
                             </div>
 
@@ -91,7 +94,7 @@
                                 <div class="wz-field"><label>Deliberation Date</label><input type="date" name="deliberation_date" id="f-deliberation" value="{{ old('deliberation_date') }}"></div>
                                 <div class="wz-na-field" style="display:none"><label>Deliberation Date</label><input type="text" class="wz-na-input" value="Not Applicable" disabled tabindex="-1"></div>
                             </div>
-                            <div class="wz-field"><label>TIN</label><input type="text" name="tin" id="f-tin" placeholder="9 digits" value="{{ old('tin') }}" maxlength="9"></div>
+                            <div class="wz-field"><label>TIN</label><input type="text" name="tin" id="f-tin" placeholder="12 digits" value="{{ old('tin') }}" maxlength="15"></div>
                         </div>
                     </div>
 
@@ -116,8 +119,8 @@
                                     <option value="ABM" {{ old('senior_high_strand') === 'ABM' ? 'selected' : '' }}>Academic Track - ABM</option>
                                     <option value="HUMSS" {{ old('senior_high_strand') === 'HUMSS' ? 'selected' : '' }}>Academic Track - HUMSS</option>
                                     <option value="STEM" {{ old('senior_high_strand') === 'STEM' ? 'selected' : '' }}>Academic Track - STEM</option>
-                                    <option value="TVL Track" {{ old('senior_high_strand') === 'SHS - TVL Track' ? 'selected' : '' }}>SHS - TVL Track</option>
-                                    <option value="Sports Track" {{ old('senior_high_strand') === 'SHS - Sports Track' ? 'selected' : '' }}>SHS - Sports Track</option>
+                                    <option value="SHS - TVL Track" {{ old('senior_high_strand') === 'SHS - TVL Track' ? 'selected' : '' }}>SHS - TVL Track</option>
+                                    <option value="SHS - Sports Track" {{ old('senior_high_strand') === 'SHS - Sports Track' ? 'selected' : '' }}>SHS - Sports Track</option>
                                 </select>
                             </div>
                             <div class="wz-field" id="teaching-level-field" style="display:none"><label>Teaching Level</label>
@@ -130,7 +133,7 @@
                             </div>
                             <div class="wz-field"><label>Eligibility</label>
                                 <select name="eligibility_type" id="f-elig">
-                                    <option value="">Select</option><option value="LET" {{ old('eligibility_type') === 'LET' ? 'selected' : '' }}>LET</option><option value="PVET" {{ old('eligibility_type') === 'PVET' ? 'selected' : '' }}>PVET</option><option value="CSP" {{ old('eligibility_type') === 'CSP' ? 'selected' : '' }}>CSP</option><option value="CSSP" {{ old('eligibility_type') === 'CSSP' ? 'selected' : '' }}>CSSP</option>
+                                    <option value="">Select</option><option value="LET" {{ old('eligibility_type') === 'LET' ? 'selected' : '' }}>LET</option><option value="PBET" {{ old('eligibility_type') === 'PBET' ? 'selected' : '' }}>PBET</option><option value="CSP" {{ old('eligibility_type') === 'CSP' ? 'selected' : '' }}>CSP</option><option value="CSSP" {{ old('eligibility_type') === 'CSSP' ? 'selected' : '' }}>CSSP</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Date of Validity of Eligibility</label><input type="date" name="eligibility_validity" id="f-eligvalid" value="{{ old('eligibility_validity') }}"></div>
@@ -175,6 +178,16 @@
                                 <label>Result</label>
                                 <div id="fd-result" style="padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-weight:600;background:var(--accent-light);color:var(--text-primary)"></div>
                             </div>
+                            <div class="wz-field">
+                                <label>Prepared By</label>
+                                <select name="prepared_by" id="f-prepared-by" onchange="if(this.value==='OTHERS'){openOthersModal('f-prepared-by')}">
+                                    <option value="">Select</option>
+                                    <option value="MIKA C. TRINIDAD" {{ old('prepared_by') === 'MIKA C. TRINIDAD' ? 'selected' : '' }}>MIKA C. TRINIDAD</option>
+                                    <option value="ANGELICA R. CABRAL" {{ old('prepared_by') === 'ANGELICA R. CABRAL' ? 'selected' : '' }}>ANGELICA R. CABRAL</option>
+                                    <option value="DIVINA GRACIA E. COSTELO" {{ old('prepared_by') === 'DIVINA GRACIA E. COSTELO' ? 'selected' : '' }}>DIVINA GRACIA E. COSTELO</option>
+                                    <option value="OTHERS" {{ old('prepared_by') === 'OTHERS' ? 'selected' : '' }}>OTHERS</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -195,18 +208,18 @@
                                 </select>
                             </div>
                             <div class="wz-field"><label>Date of Birth <span class="req">*</span></label><input type="date" name="date_of_birth" id="f-dob" value="{{ old('date_of_birth') }}" required></div>
-                            <div class="wz-field"><label>PWD? <span class="req">*</span></label>
-                                <select name="pwd" id="f-pwd" required>
-                                    <option value="">Select</option><option value="Yes" {{ old('pwd') === 'Yes' ? 'selected' : '' }}>Yes</option><option value="No" {{ old('pwd') === 'No' ? 'selected' : '' }}>No</option>
+                            <div class="wz-field"><label>PWD?</label>
+                                <select name="pwd" id="f-pwd" style="pointer-events:none">
+                                    <option value="N/A" selected>N/A</option>
                                 </select>
                             </div>
-                            <div class="wz-field"><label>Type of Disability</label><input type="text" name="type_of_disability" id="f-pwdtype" placeholder="e.g. Permanent physical disability" value="{{ old('type_of_disability') }}"></div>
-                            <div class="wz-field"><label>Member of IP Group? <span class="req">*</span></label>
-                                <select name="ip_group_member" id="f-ip" required>
-                                    <option value="">Select</option><option value="Yes" {{ old('ip_group_member') === 'Yes' ? 'selected' : '' }}>Yes</option><option value="No" {{ old('ip_group_member') === 'No' ? 'selected' : '' }}>No</option>
+                            <div class="wz-field"><label>Type of Disability</label><input type="text" name="type_of_disability" id="f-pwdtype" value="N/A" readonly class="wz-disabled-fill"></div>
+                            <div class="wz-field"><label>Member of IP Group?</label>
+                                <select name="ip_group_member" id="f-ip" style="pointer-events:none">
+                                    <option value="N/A" selected>N/A</option>
                                 </select>
                             </div>
-                            <div class="wz-field span2"><label>Ethnicity</label><input type="text" name="ethnicity" id="f-ethnicity" placeholder="e.g. Tagalog, Bisaya" value="{{ old('ethnicity') }}"></div>
+                            <div class="wz-field span2"><label>Ethnicity</label><input type="text" name="ethnicity" id="f-ethnicity" value="Tagalog" readonly class="wz-disabled-fill"></div>
                         </div>
                     </div>
 
@@ -252,6 +265,10 @@
         </div>
     </div>
 @endsection
+
+@push('modals')
+    @include('appointments.partials.others-modal')
+@endpush
 
 @push('scripts')
 <script>
@@ -307,18 +324,10 @@ function syncReadonly() {
     set('rx-md-poslevel', wg('f-poslevel'));
     set('rx-md-sex', wg('f-sex'));
     set('rx-md-dob', wg('f-dob'));
-    const pwdVal = wg('f-pwd');
-    set('rx-md-pwd', pwdVal);
-    if (pwdVal === 'Yes') {
-        set('rx-md-pwdtype', wg('f-pwdtype') || '—');
-    } else if (pwdVal === 'No') {
-        const pwdTypeEl = document.getElementById('rx-md-pwdtype');
-        if (pwdTypeEl && !pwdTypeEl.value) pwdTypeEl.value = 'N/A';
-    } else {
-        set('rx-md-pwdtype', '');
-    }
-    set('rx-md-ip', wg('f-ip'));
-    set('rx-md-ethnicity', wg('f-ethnicity') || '—');
+    set('rx-md-pwd', 'N/A');
+    set('rx-md-pwdtype', 'N/A');
+    set('rx-md-ip', 'N/A');
+    set('rx-md-ethnicity', 'Tagalog');
 }
 
 function syncDateFieldsByStatus() {
@@ -351,7 +360,7 @@ function syncDateFieldsByStatus() {
 
 function fdResult() {
     const v = document.getElementById('f-nonteaching')?.value;
-    return v === 'Yes' ? 'Antonio P. Faustino Jr.' : (v === 'No' ? 'Ruben E. Faltado III' : '—');
+    return v === 'Yes' ? 'Ruben E. Faltado III' : (v === 'No' ? 'Antonio P. Faustino Jr.' : '—');
 }
 
 function wzBuildReview() {
@@ -370,7 +379,8 @@ function wzBuildReview() {
             ['Publication Date (FROM)', wg('f-pubdate-from')],
             ['Publication Date (TO)', wg('f-pubdate-to')],
             ['Assessment Date', wg('f-assessment')],
-            ['Deliberation Date', wg('f-deliberation')]
+            ['Deliberation Date', wg('f-deliberation')],
+            ['Prepared By', wg('f-prepared-by')]
         ]},
         { title: 'Checklist', rows: [
             ['Employee name', rxv('rx-cl-empname')], ['Position', rxv('rx-cl-pos')],
@@ -398,9 +408,9 @@ function wzBuildReview() {
             ['Date of Last Promotion', wg('f-dlp')], ['Position From', wg('f-pfrom')],
             ['Name of Previous Incumbent', wg('f-prev') || 'Vacant'],
             ['Position Level', wg('f-poslevel')],
-            ['Sex', wg('f-sex')], ['Date of Birth', wg('f-dob')], ['PWD?', wg('f-pwd')],
-            ['Type of Disability', wg('f-pwdtype') || (wg('f-pwd') === 'No' ? 'N/A' : '—')],
-            ['Member of IP Group?', wg('f-ip')], ['Ethnicity', wg('f-ethnicity') || '—']
+            ['Sex', wg('f-sex')], ['Date of Birth', wg('f-dob')],             ['PWD?', 'N/A'],
+            ['Type of Disability', 'N/A'],
+            ['Member of IP Group?', 'N/A'], ['Ethnicity', 'Tagalog']
         ]}
     ];
     reviewEl.innerHTML = sections.map(s => `
@@ -422,6 +432,11 @@ function wzGoNext() {
     }
     if (wzCurrent === 0 && (!fPos?.value || !fEstatus?.value || !fNature?.value)) {
         wzShowWarning('Please fill in the required fields (Position, Employment status, Appointment nature) before continuing.');
+        return;
+    }
+    const validNatures = ['Original', 'Promotion', 'Demotion', 'Transfer', 'Reclassification', 'Reemployment', 'Reappointment'];
+    if (wzCurrent === 0 && fNature?.value && !validNatures.includes(fNature.value)) {
+        wzShowWarning('Please select a valid nature of appointment before continuing.');
         return;
     }
     if (wzCurrent === WZ_TOTAL - 1) wzBuildReview();
@@ -509,22 +524,11 @@ function syncFinalDeliberation() {
 }
 
 function syncPwdType() {
-    const pwdSelect = document.getElementById('f-pwd');
     const pwdTypeInput = document.getElementById('f-pwdtype');
-    if (!pwdSelect || !pwdTypeInput) return;
-    if (pwdSelect.value === 'No') {
-        pwdTypeInput.value = 'N/A';
-        pwdTypeInput.disabled = true;
-        pwdTypeInput.classList.add('wz-disabled-fill');
-    } else if (pwdSelect.value === 'Yes') {
-        pwdTypeInput.value = '';
-        pwdTypeInput.disabled = false;
-        pwdTypeInput.classList.remove('wz-disabled-fill');
-    } else {
-        pwdTypeInput.value = '';
-        pwdTypeInput.disabled = false;
-        pwdTypeInput.classList.remove('wz-disabled-fill');
-    }
+    if (!pwdTypeInput) return;
+    pwdTypeInput.value = 'N/A';
+    pwdTypeInput.disabled = true;
+    pwdTypeInput.classList.add('wz-disabled-fill');
 }
 
     // Names: letters, spaces, periods, apostrophes and hyphens only
@@ -534,11 +538,12 @@ function syncPwdType() {
         });
     });
 
-    // TIN: digits only, max 9
+    // TIN: digits only, max 12, formatted with dashes every 3 digits
     var tin = document.getElementById('f-tin');
     if (tin) {
         tin.addEventListener('input', function () {
-            tin.value = tin.value.replace(/\D/g, '').slice(0, 9);
+            var digits = this.value.replace(/\D/g, '').slice(0, 12);
+            this.value = digits.replace(/(\d{3})(?=\d)/g, '$1-');
         });
     }
 
@@ -551,6 +556,10 @@ function syncPwdType() {
     if (wzForm) {
         wzForm.addEventListener('input', syncReadonly);
         wzForm.addEventListener('change', syncReadonly);
+        wzForm.addEventListener('submit', function () {
+            var tin = document.getElementById('f-tin');
+            if (tin) tin.value = tin.value.replace(/-/g, '');
+        });
     }
 
     var estatusSelect = document.getElementById('f-estatus');
@@ -862,6 +871,10 @@ function syncPwdType() {
         if (wzForm) {
             wzForm.addEventListener('input', syncReadonly);
             wzForm.addEventListener('change', syncReadonly);
+            wzForm.addEventListener('submit', function () {
+                const tin = document.getElementById('f-tin');
+                if (tin) tin.value = tin.value.replace(/-/g, '');
+            });
         }
 
         if (estatusSelect) {

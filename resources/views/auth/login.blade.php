@@ -30,7 +30,7 @@
 
         /* ── Fixed background ── */
         body {
-            background: url('{{ asset('matatag-bg.png') }}') center center / cover no-repeat fixed;
+            background: url('{{ asset('deped_bg.jpg') }}') center center / cover no-repeat fixed;
             position: relative;
         }
         body::after {

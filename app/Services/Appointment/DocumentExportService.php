@@ -84,7 +84,7 @@ class DocumentExportService
 
         // Appointment Form
         try {
-            $path    = $this->formService->generateWithTemplateFile($appointment, 'SAMPLE APPOINTMENT FORM.docx');
+            $path    = $this->formService->generate($appointment);
             $files[] = ['path' => $path, 'name' => "{$folderName}/{$personPart}_Appointment.docx"];
             $this->tryMarkDownloaded($appointment, 'afa');
         } catch (\Throwable $e) {

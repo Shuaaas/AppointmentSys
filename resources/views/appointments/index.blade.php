@@ -12,15 +12,13 @@
             <i class="ti ti-search" aria-hidden="true"></i>
             <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…"
                    onchange="this.form.submit()">
-            <select name="nature" onchange="this.form.submit()" aria-label="Filter by appointment nature">
-                <option value="">All natures</option>
-                <option value="Original" {{ $selectedNature === 'Original' ? 'selected' : '' }}>Original</option>
-                <option value="Promotion" {{ $selectedNature === 'Promotion' ? 'selected' : '' }}>Promotion</option>
-                <option value="Demotion" {{ $selectedNature === 'Demotion' ? 'selected' : '' }}>Demotion</option>
-                <option value="Transfer" {{ $selectedNature === 'Transfer' ? 'selected' : '' }}>Transfer</option>
-                <option value="Re-Classification" {{ $selectedNature === 'Re-Classification' ? 'selected' : '' }}>Re-Classification</option>
-                <option value="Re-Employment" {{ $selectedNature === 'Re-Employment' ? 'selected' : '' }}>Re-Employment</option>
-                <option value="Re-Appointment" {{ $selectedNature === 'Re-Appointment' ? 'selected' : '' }}>Re-Appointment</option>
+            <select name="user" onchange="this.form.submit()" aria-label="Filter by encoded by">
+                <option value="">All Users</option>
+                @foreach($hrUsers as $hrUser)
+                    <option value="{{ $hrUser->id }}" {{ $selectedUser == $hrUser->id ? 'selected' : '' }}>
+                        {{ $hrUser->name }}
+                    </option>
+                @endforeach
             </select>
             <input type="hidden" name="date" value="{{ $selectedDate }}">
             <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
@@ -30,17 +28,17 @@
             <i class="ti ti-calendar" aria-hidden="true"></i>
             <label for="appt-date-select">Date encoded</label>
             <select id="appt-date-select" name="date" onchange="this.form.submit()">
+                <option value="" {{ empty($selectedDate) ? 'selected' : '' }}>All appointments</option>
                 @forelse ($availableDates as $i => $date)
                     <option value="{{ $date }}" {{ $date === $selectedDate ? 'selected' : '' }}>
                         {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}{{ $i === 0 ? ' (latest)' : '' }}
                     </option>
                 @empty
-                    <option value="">No dates available</option>
                 @endforelse
             </select>
             <input type="hidden" name="q" value="{{ $search }}">
             <input type="hidden" name="status" value="{{ $selectedStatus ?? '' }}">
-            <input type="hidden" name="nature" value="{{ $selectedNature ?? '' }}">
+            <input type="hidden" name="user" value="{{ $selectedUser ?? '' }}">
         </form>
     </div>
     <div class="action-bar-right">
@@ -55,9 +53,9 @@
             <button type="button" class="btn btn-danger" id="bulk-trash-btn" onclick="openBulkDeleteModal()" disabled>
                 <i class="ti ti-trash" aria-hidden="true"></i> Trash selected
             </button>
-            <a href="{{ route('appointments.create') }}" class="btn btn-primary add-entry-btn">
-                <i class="ti ti-plus" aria-hidden="true"></i> Add new entry
-            </a>
+            <button type="button" class="btn btn-success" id="mark-completed-btn" onclick="openMarkCompletedModal()" disabled>
+                <i class="ti ti-check" aria-hidden="true"></i> Mark completed
+            </button>
         </div>
     </div>
     <div class="table-card">
@@ -91,12 +89,11 @@
                             <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => '', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:inherit">All</a>
                             <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'active', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#1E90FF">Active</a>
                             <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'in_progress', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#FFB020">In Progress</a>
-                            <a class="status-menu-item" href="{{ route('appointments.index', ['q' => $search, 'date' => $selectedDate, 'status' => 'completed', 'nature' => $selectedNature ?? '']) }}" style="display:block;padding:8px 12px;text-decoration:none;color:#28A745">Completed</a>
                         </div>
                     </th>
-                    <th>Original appt.</th>
-                    <th>Open</th>
-                    <th>Date encoded</th>
+                     <th>Open</th>
+                     <th>Date encoded</th>
+                     <th>Encoded By</th>
                 </tr>
             </thead>
             <tbody>
@@ -125,9 +122,9 @@
                             @endphp
                             <span class="badge {{ $statusClass }}" id="status-badge-{{ $a->id }}">{{ $a->display_record_state }}</span>
                         </td>
-                        <td>{{ optional($a->date_original_appointment)->format('Y-m-d') ?? '—' }}</td>
-                        <td><button type="button" class="btn btn-secondary btn-sm open-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Expand details"><i class="ti ti-chevron-down" aria-hidden="true"></i> Expand</button></td>
-                        <td style="font-size:12px;color:var(--text-muted)">{{ $a->encoded_at->format('F j, Y g:i A') }}</td>
+                         <td><button type="button" class="btn btn-secondary btn-sm open-btn" onclick="toggleRow({{ $a->id }}, event)" aria-expanded="false" title="Expand details"><i class="ti ti-chevron-down" aria-hidden="true"></i> Expand</button></td>
+                         <td style="font-size:12px;color:var(--text-muted)">{{ $a->encoded_at->format('F j, Y g:i A') }}</td>
+                         <td style="font-size:12px;color:var(--text-muted)">{{ $a->owner->name ?? '—' }}</td>
                     </tr>
                         <tr class="dropdown-row" id="detail-{{ $a->id }}">
                             <td colspan="9">
@@ -166,26 +163,55 @@
     </div>
     </div>
 
-@if(session('tn_saved'))
-    <div class="overlay show" id="tn-saved-overlay" style="z-index:300">
-        <div class="modal" style="max-width:420px">
-            <div class="modal-body" style="text-align:center;padding:30px 28px">
-                <div style="font-size:2.6rem;color:var(--green)"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
-                <h5 style="font-weight:800;margin:10px 0 2px;color:var(--text-primary)">Transaction number saved</h5>
-                <p style="font-size:.85rem;color:var(--text-muted);margin:0 0 14px">{{ session('tn_name') }}</p>
-                <div style="background:var(--accent-light);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:1.05rem;font-weight:700;letter-spacing:.04em;color:var(--text-primary)">{{ session('tn_saved') }}</div>
-                <p style="font-size:.78rem;color:var(--text-muted);margin:12px 0 0">Please double-check the number above for any typos.</p>
-                <button type="button" class="btn btn-primary" style="margin-top:16px;width:100%" onclick="document.getElementById('tn-saved-overlay').classList.remove('show')">Done</button>
+<div class="overlay" id="overlay-mark-completed">
+    <div class="modal" style="max-width:460px">
+        <div class="modal-head">
+            <span class="modal-title">Mark as Completed</span>
+            <button type="button" class="modal-close" onclick="closeModal('overlay-mark-completed')" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="confirm-icon"><i class="ti ti-alert-triangle" style="font-size:44px;color:var(--amber)" aria-hidden="true"></i></div>
+            <p class="confirm-msg" style="margin-bottom:12px">Mark the following appointment(s) as completed?</p>
+
+            <div id="mc-appointment-list" style="max-height:200px;overflow-y:auto;margin:8px 0;border:1px solid var(--border);border-radius:6px;padding:8px 12px;background:var(--color-tab-bg);font-size:0.88rem;font-family:var(--font-mono)">
             </div>
+
+            <div id="mc-warning" style="display:none;margin-top:12px">
+                <p style="color:var(--red);font-size:0.85rem;margin:8px 0 0">
+                    <i class="ti ti-alert-circle" aria-hidden="true"></i>
+                    <strong>Action required:</strong> The appointments highlighted in red are still <strong>Active</strong> and need to be moved to <strong>In Progress</strong> first before they can be marked as completed.
+                </p>
+            </div>
+
+            <div id="mc-help" style="display:none;margin-top:12px">
+                <p style="font-size:0.85rem;color:var(--text-muted);margin:8px 0 0">
+                    <i class="ti ti-info-circle" aria-hidden="true"></i>
+                    All selected appointments are currently <strong>In Progress</strong> and ready to be marked as completed.
+                </p>
+            </div>
+
+            <p style="margin-top:14px;font-size:0.78rem;color:var(--text-muted)">
+                This action will move the selected record(s) to the Archive page. This cannot be undone.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('overlay-mark-completed')">Cancel</button>
+            <form id="mark-completed-form" method="POST" action="{{ route('appointments.markCompleted') }}">
+                @csrf
+                <button type="button" class="btn btn-success" id="mc-confirm-btn" onclick="confirmMarkCompleted()" disabled>
+                    <i class="ti ti-check" style="font-size:13px" aria-hidden="true"></i> Yes, mark as completed
+                </button>
+            </form>
         </div>
     </div>
-@endif
+</div>
 
 @push('modals')
     @include('appointments.partials.wizard-modal')
     @include('appointments.partials.delete-modal')
     @include('appointments.partials.download-modal')
     @include('appointments.partials.view-modal')
+    @include('appointments.partials.others-modal')
 @endpush
 
 @push('scripts')
@@ -291,9 +317,15 @@ function populateWizardForm(data) {
     setValue('f-sex', data.sex);
     setValue('f-dob', data.date_of_birth);
     setValue('f-tin', data.tin);
-    setValue('f-pwd', data.pwd);
-    setValue('f-ip', data.ip_group_member);
-    setValue('f-ethnicity', data.ethnicity);
+    var tinField = document.getElementById('f-tin');
+    if (tinField && tinField.value) {
+        var tinDigits = tinField.value.replace(/\D/g, '').slice(0, 12);
+        tinField.value = tinDigits.replace(/(\d{3})(?=\d)/g, '$1-');
+    }
+    setValue('f-pwd', 'N/A');
+    setValue('f-pwdtype', 'N/A');
+    setValue('f-ip', 'N/A');
+    setValue('f-ethnicity', 'Tagalog');
 
     setValue('f-pos', data.position_title);
     setValue('f-pfrom', data.position_from);
@@ -317,6 +349,7 @@ function populateWizardForm(data) {
     setValue('f-plantilla-item', data.plantilla_item_number);
     setValue('f-plantilla-page', data.plantilla_page_number);
     setValue('f-odc', data.odc_number);
+    setValue('f-tn', data.transaction_number);
     setValue('f-drec', data.date_received_records);
     setValue('f-dhr', data.date_received_hr);
     setValue('f-prev', data.previous_incumbent);
@@ -342,6 +375,7 @@ function populateWizardForm(data) {
     setValue('f-strand', data.senior_high_strand);
     setValue('f-teaching-level', data.teaching_level);
     setValue('f-nonteaching', data.non_teaching);
+    setValue('f-prepared-by', data.prepared_by);
 
     if (typeof syncReadonly === 'function') syncReadonly();
     if (typeof syncPwdType === 'function') syncPwdType();
@@ -410,6 +444,9 @@ function buildAppointmentSummary(data) {
     const employeeName = `${data.last_name || ''}, ${data.first_name || ''}${data.middle_name ? ' ' + data.middle_name : ''}${data.extension_name ? ' ' + data.extension_name : ''}`.replace(/,\s+/g, ', ').trim();
 
     const appointmentRows = [
+        ['Transaction Number', data.transaction_number || '—'],
+        ['Date Received by Records', formatDate(data.date_received_records)],
+        ['Date Received by HR', formatDate(data.date_received_hr)],
         ['Full name', employeeName],
         ['Position', data.position_title],
         ['Salary grade', data.salary_grade],
@@ -461,6 +498,7 @@ function buildAppointmentSummary(data) {
         ['Employee name', employeeName],
         ['Position', data.position_title],
         ['Date of signing', formatDate(data.date_of_signing)],
+        ['Prepared By', data.prepared_by || '—'],
     ];
 
     const monitoringRows = [
@@ -470,10 +508,10 @@ function buildAppointmentSummary(data) {
         ['Position Level', data.position_level],
         ['Sex', data.sex],
         ['Date of Birth', formatDate(data.date_of_birth)],
-        ['PWD?', data.pwd],
-        ['Type of Disability', data.type_of_disability || (data.pwd === 'No' ? 'N/A' : '—')],
-        ['Member of IP Group?', data.ip_group_member],
-        ['Ethnicity', data.ethnicity || '—'],
+        ['PWD?', 'N/A'],
+        ['Type of Disability', 'N/A'],
+        ['Member of IP Group?', 'N/A'],
+        ['Ethnicity', 'Tagalog'],
     ];
 
     const sections = [
@@ -653,6 +691,72 @@ function openBulkDeleteModal() {
     document.getElementById('overlay-del').classList.add('show');
     document.getElementById('overlay-del').dataset.bulkIds = JSON.stringify(selected);
     document.getElementById('overlay-del').dataset.formId = '';
+}
+
+function openMarkCompletedModal() {
+    const selected = getSelectedIds();
+    if (!selected.length) {
+        alert('Please select at least one appointment first.');
+        return;
+    }
+
+    const listEl = document.getElementById('mc-appointment-list');
+    const warningEl = document.getElementById('mc-warning');
+    const helpEl = document.getElementById('mc-help');
+    const confirmBtn = document.getElementById('mc-confirm-btn');
+
+    listEl.innerHTML = '';
+
+    let hasActive = false;
+
+    selected.forEach(id => {
+        const row = document.getElementById('row-' + id);
+        const nameEl = row ? row.querySelector('.name-text') : null;
+        const statusBadge = row ? row.querySelector('#status-badge-' + id) : null;
+        const statusText = statusBadge ? statusBadge.textContent.trim() : '';
+        const name = nameEl ? nameEl.textContent.trim() : ('Record #' + id);
+
+        const item = document.createElement('div');
+        item.style.padding = '6px 0';
+        item.style.borderBottom = '1px solid var(--border)';
+
+        if (statusText === 'Active') {
+            hasActive = true;
+            item.innerHTML = '<span style="color:var(--red)">' + escapeHtml(name) + '</span> <span style="color:var(--text-muted);font-size:0.8em">(' + statusText + ')</span>';
+        } else {
+            item.innerHTML = escapeHtml(name) + ' <span style="color:var(--text-muted);font-size:0.8em">(' + statusText + ')</span>';
+        }
+
+        listEl.appendChild(item);
+    });
+
+    warningEl.style.display = hasActive ? 'block' : 'none';
+    helpEl.style.display = hasActive ? 'none' : 'block';
+    confirmBtn.disabled = hasActive;
+
+    document.getElementById('overlay-mark-completed').classList.add('show');
+    document.getElementById('overlay-mark-completed').dataset.bulkIds = JSON.stringify(selected);
+}
+
+function confirmMarkCompleted() {
+    const overlay = document.getElementById('overlay-mark-completed');
+    const bulkIds = overlay.dataset.bulkIds;
+    if (!bulkIds) return;
+
+    const ids = JSON.parse(bulkIds);
+    const form = document.getElementById('mark-completed-form');
+
+    form.querySelectorAll('input[name="ids[]"]').forEach(el => el.remove());
+
+    ids.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'ids[]';
+        input.value = id;
+        form.appendChild(input);
+    });
+
+    form.submit();
 }
 
 function confirmDelete() {
@@ -850,6 +954,7 @@ function initIndexPage() {
     const rows = document.querySelectorAll('.select-row');
     const bulkTrashBtn = document.getElementById('bulk-trash-btn');
     const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+    const markCompletedBtn = document.getElementById('mark-completed-btn');
 
     const updateBulkButton = () => {
         const selected = getSelectedIds();
@@ -857,6 +962,9 @@ function initIndexPage() {
 
         if (bulkTrashBtn) {
             bulkTrashBtn.disabled = !hasSelection;
+        }
+        if (markCompletedBtn) {
+            markCompletedBtn.disabled = !hasSelection;
         }
         if (bulkDownloadBtn) {
             const label = bulkDownloadBtn.querySelector('.download-label');

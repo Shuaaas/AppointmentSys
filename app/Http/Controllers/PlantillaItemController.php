@@ -35,7 +35,8 @@ class PlantillaItemController extends Controller
 
         $results = PlantillaItem::query()
             ->where($field, 'like', "%{$term}%")
-            ->orderBy('data')
+            ->orderByRaw("CASE WHEN {$field} LIKE ? THEN 0 ELSE 1 END", [$term . '%'])
+            ->orderBy($field)
             ->limit(20)
             ->get(['id', 'data', 'position', 'school_name', 'city_municipality', 'position_level', 'eligibility']);
 
@@ -73,7 +74,7 @@ class PlantillaItemController extends Controller
             return response()->json(['amount' => null, 'words' => '']);
         }
 
-        $words = mb_strtoupper($this->numberToWords((int) $amount) . ' pesos', 'UTF-8');
+        $words = mb_strtoupper($this->numberToWords((int) $amount), 'UTF-8');
 
         return response()->json([
             'amount' => number_format((float) $amount, 2, '.', ''),

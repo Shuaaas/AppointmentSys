@@ -24,9 +24,13 @@ class AppointmentFormService
      */
     public function generate(Appointment $appointment): string
     {
-        $templateName = $appointment->senior_high_school === 'Yes'
-            ? 'SAMPLE APPOINTMET FOR SHS.docx'
-            : 'SAMPLE APPOINTMENT FORM.docx';
+         if ($appointment->senior_high_school === 'Yes') {
+            $templateName = 'SAMPLE APPOINTMENT FORM FOR SHS.docx';
+        } elseif ($appointment->senior_high_school === 'No' && $appointment->teaching_level === 'Secondary') {
+            $templateName = 'SAMPLE APPOINTMENT FORM FOR HS.docx';
+        } else {
+            $templateName = 'SAMPLE APPOINTMENT FORM.docx';
+        }
 
         $templatePath = resource_path('templates/' . $templateName);
 
@@ -163,7 +167,7 @@ class AppointmentFormService
      */
     public function generateRai(Appointment $appointment): string
     {
-        $templatePath = resource_path('templates/Report on Appointment Issued.xlsx');
+        $templatePath = resource_path('templates/Report on Appointment Issued_NEW.xlsx');
 
         if (! File::exists($templatePath)) {
             throw new RuntimeException('RAI template was not found.');
@@ -178,7 +182,6 @@ class AppointmentFormService
         $sheet       = $spreadsheet->getActiveSheet();
 
         $this->replacePlaceholdersInSheet($sheet, $this->raiPlaceholderValues($appointment));
-        $this->uppercaseSheetText($sheet);
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputPath);
@@ -198,7 +201,7 @@ class AppointmentFormService
      */
     public function generateConsolidatedRai(\Illuminate\Support\Collection $appointments): string
     {
-        $templatePath = resource_path('templates/Report on Appointment Issued.xlsx');
+        $templatePath = resource_path('templates/Report on Appointment Issued_NEW.xlsx');
 
         if (! File::exists($templatePath)) {
             throw new RuntimeException('RAI template was not found.');
@@ -227,8 +230,6 @@ class AppointmentFormService
             $count++;
         }
 
-        $this->uppercaseSheetText($sheet);
-
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($outputPath);
 
@@ -241,8 +242,17 @@ class AppointmentFormService
 
     private function writeRaiDataRow(Worksheet $sheet, int $row, Appointment $appointment): void
     {
-        $date = $appointment->date_original_appointment;
-        $dateStr = $date ? date('m/d/Y', strtotime((string) $date)) : '';
+        $dateStr = $appointment->date_of_signing ? date('m/d/Y', strtotime((string) $appointment->date_of_signing)) : '';
+
+        $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
+        $pubFrom = $isNonPermanent ? null : $this->dateShort($appointment->publication_date_from);
+        $pubTo = $isNonPermanent ? null : $this->dateShort($appointment->publication_date_to);
+        $subFrom = $isNonPermanent ? $this->dateShort($appointment->substitute_from) : null;
+        $subTo = $isNonPermanent ? $this->dateShort($appointment->substitute_to) : null;
+
+        $pubRange = $this->buildDateRange($pubFrom, $pubTo, $isNonPermanent);
+        $subRange = $this->buildDateRange($subFrom, $subTo, false);
 
         $sheet->setCellValue('A' . $row, $row - 24);
         $sheet->setCellValue('B' . $row, $dateStr);
@@ -255,13 +265,23 @@ class AppointmentFormService
         $sheet->setCellValueExplicit('I' . $row, $this->salaryGrade($appointment), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValue('J' . $row, $this->pesoAmount($appointment->monthly_salary ?? $appointment->compensation_numbers));
         $sheet->setCellValue('K' . $row, $appointment->employee_status);
-        $sheet->setCellValue('L' . $row, 'N/A');
+        $sheet->setCellValue('L' . $row, $subRange);
         $sheet->setCellValue('M' . $row, $this->upper($appointment->nature_of_appointment));
+        $sheet->setCellValue('N' . $row, $pubRange);
+        $sheet->setCellValue('O' . $row, 'N/A');
     }
 
     private function raiPlaceholderValues(Appointment $appointment): array
     {
         $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+
+        $pubFrom = $isNonPermanent ? null : $this->dateShort($appointment->publication_date_from);
+        $pubTo = $isNonPermanent ? null : $this->dateShort($appointment->publication_date_to);
+        $subFrom = $isNonPermanent ? $this->dateShort($appointment->substitute_from) : null;
+        $subTo = $isNonPermanent ? $this->dateShort($appointment->substitute_to) : null;
+
+        $pubRange = $this->buildDateRange($pubFrom, $pubTo, $isNonPermanent);
+        $subRange = $this->buildDateRange($subFrom, $subTo, false);
 
         return [
             'last_name' => $this->upper($appointment->last_name),
@@ -279,15 +299,33 @@ class AppointmentFormService
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
             'date_of_appointment' => $this->date($appointment->date_original_appointment),
             'date_of_signing' => $appointment->date_of_signing ? date('m/d/Y', strtotime((string) $appointment->date_of_signing)) : '',
-            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_from),
-            'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
+            'current_date' => $this->currentDateFromSigning($appointment->date_of_signing),
+            'publication_date_from' => $pubFrom ?: 'N/A',
+            'publication_date_to' => $pubTo ?: 'N/A',
+            'publication_date_range' => $pubRange,
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
-            'substitute_from' => $isNonPermanent ? $this->date($appointment->publication_date_from) : 'N/A',
-            'substitute_to' => $isNonPermanent ? $this->date($appointment->publication_date_to) : 'N/A',
+            'substitute_from' => $subFrom ?: 'N/A',
+            'substitute_to' => $subTo ?: 'N/A',
+            'substitute_date_range' => $subRange,
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
         ];
+    }
+
+    private function buildDateRange(?string $from, ?string $to, bool $forceNa): string
+    {
+        if ($forceNa) {
+            return 'N/A';
+        }
+
+        if (!$from && !$to) {
+            return 'N/A';
+        }
+
+        $parts = array_filter([$from, $to]);
+
+        return implode(' to ', $parts);
     }
 
     private function finalDeliberationValues(Appointment $appointment): array
@@ -309,6 +347,7 @@ class AppointmentFormService
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
             'non_teaching' => $appointment->non_teaching ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
+            'prepared_by' => $this->upper($appointment->prepared_by ?: ''),
         ];
     }
 
@@ -321,29 +360,31 @@ class AppointmentFormService
         $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
 
         return [
-            'employee_name' => $this->upper($this->employeeName($appointment)),
+            'employee_name' => $this->upper($this->checklistEmployeeName($appointment)),
             'position' => $this->upper($appointment->position_title),
             'salary_grade' => $this->salaryGrade($appointment),
             'salary' => $this->pesoAmount($appointment->monthly_salary ?? $appointment->compensation_numbers),
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
             'date_of_appointment' => $this->date($appointment->date_original_appointment),
-            'date_of_signing' => $this->date($appointment->date_of_signing),
-            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_from),
+            'date_of_signing' => $this->properCase($this->date($appointment->date_of_signing)),
+            'publication_date_from' => $isNonPermanent ? 'N/A' : $this->properCase($this->date($appointment->publication_date_from)),
             'publication_date_to' => $isNonPermanent ? 'N/A' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
             'deliberation_date' => $this->date($appointment->deliberation_date),
             'education' => $appointment->education ?: '',
             'senior_high_strand' => $appointment->senior_high_strand ?: '',
-            'strand' => $appointment->senior_high_strand ?: '',
+            'strand' => $appointment->senior_high_school === 'No' ? 'N/A' : ($appointment->senior_high_strand ?: 'N/A'),
             'teaching_level' => $appointment->senior_high_school === 'No' ? ($appointment->teaching_level ?: '') : 'N/A',
-            'employment_status' => $appointment->employee_status ?: '',
-            'appointment_nature' => $appointment->nature_of_appointment ?: '',
+            'employment_status' => $this->properCase($appointment->employee_status ?: ''),
+            'appointment_nature' => $this->properCase($appointment->nature_of_appointment ?: ''),
             'non_teaching' => $appointment->non_teaching ?: '',
             'non_teaching_result' => $this->nonTeachingResult($appointment),
             'eligibility_type' => $appointment->eligibility_type ?: '',
             'eligibility' => $appointment->eligibility_type ?: '',
             'eligibility_validity' => $this->date($appointment->eligibility_validity),
             'eligibility_first_used' => $appointment->eligibility_first_used ?: '',
+            'encoder_name'   => $this->upper($appointment->owner->name ?? '—'),
+            'user_position'  => $this->properCase($appointment->owner->position_title ?: '—'),
         ];
     }
 
@@ -373,8 +414,17 @@ class AppointmentFormService
                     '/\$\{\s*([a-zA-Z0-9_ ]+)\s*\}/',
                     function ($matches) use ($values) {
                         $key = trim($matches[1]);
+                        $value = array_key_exists($key, $values) ? (string) $values[$key] : $matches[0];
 
-                        return array_key_exists($key, $values) ? (string) $values[$key] : $matches[0];
+                        if ($key === 'current_date') {
+                            return $this->properCase($value);
+                        }
+
+                        if (in_array($key, ['encoder_name', 'user_position', 'employment_status', 'date_of_signing', 'publication_date_from', 'appointment_nature'])) {
+                            return $value;
+                        }
+
+                        return mb_strtoupper($value, 'UTF-8');
                     },
                     $cellValue
                 );
@@ -509,8 +559,11 @@ class AppointmentFormService
     {
         $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
 
-        return [
+         return [
             'employee_name' => $this->upper($this->employeeNameForAppointmentForm($appointment)),
+            'tn_number' => $this->upper($appointment->transaction_number ?: ''),
+            'received_records' => $this->date($appointment->date_received_records),
+            'received_hr' => $this->date($appointment->date_received_hr),
             'position' => $this->properCase($appointment->position_title),
             'salary_grade' => $this->salaryGrade($appointment),
             'salary' => $this->money($appointment->monthly_salary ?? $appointment->compensation_numbers),
@@ -603,14 +656,10 @@ class AppointmentFormService
         $spreadsheet = IOFactory::load($templatePath);
         $sheet       = $spreadsheet->getActiveSheet();
 
-        if ($appointments->isNotEmpty()) {
-            $this->replacePlaceholdersInSheet($sheet, $this->monitoringPlaceholderValues($appointments->first()));
-        }
-
         $count = 0;
-        foreach ($appointments->skip(1) as $appointment) {
+        foreach ($appointments as $appointment) {
+            $this->writeMonitoringDataRow($sheet, 3 + $count, $appointment);
             $count++;
-            $this->writeMonitoringDataRow($sheet, 4 + $count, $appointment);
         }
 
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
@@ -628,6 +677,9 @@ class AppointmentFormService
         $values = $this->monitoringPlaceholderValues($appointment);
 
         $mapping = [
+            'A'  => 'tn_number',
+            'B'  => 'received_records',
+            'C'  => 'received_hr',
             'D'  => 'school',
             'E'  => 'plantilla_number',
             'F'  => 'position_from',
@@ -669,6 +721,9 @@ class AppointmentFormService
     private function monitoringPlaceholderValues(Appointment $appointment): array
     {
         return [
+            'tn_number' => $this->upper($appointment->transaction_number ?: ''),
+            'received_records' => $this->dateShort($appointment->date_received_records),
+            'received_hr' => $this->dateShort($appointment->date_received_hr),
             'school' => $this->upper($appointment->school ?: ($appointment->agency_name ?? ($appointment->school_district ?: ''))),
             'plantilla_number' => $this->upper($appointment->plantilla_item_number ?: ''),
             'position_from' => $this->upper($appointment->position_from ?: ''),
@@ -676,7 +731,7 @@ class AppointmentFormService
             'vice' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
             'sex' => $this->upper($appointment->sex ?: ''),
             'date_of_birth' => $this->dateShort($appointment->date_of_birth),
-            'tin' => $this->upper($appointment->tin ?: ''),
+            'tin' => $this->upper(str_replace('-', '', $appointment->tin ?: '')),
             'date_of_signing' => $this->dateShort($appointment->date_of_signing),
             'date_of_last_promotion' => $this->dateShort($appointment->date_last_promotion),
             'eligibility_type' => $this->upper($appointment->eligibility_type ?: ''),
@@ -686,10 +741,10 @@ class AppointmentFormService
             'position_level' => $this->upper($appointment->position_level ?: ''),
             'appointment_nature' => $this->upper($appointment->nature_of_appointment ?: ''),
             'employment_status' => $this->upper($appointment->employee_status ?: ''),
-            'pwd' => $this->upper($appointment->pwd ?: ''),
-            'type_of_disability' => $this->upper($appointment->type_of_disability ?: ($appointment->pwd === 'No' ? 'N/A' : '')),
-            'ip_group_member' => $this->upper($appointment->ip_group_member ?: ''),
-            'ethnicity' => $this->upper($appointment->ethnicity ?: ''),
+            'pwd' => 'N/A',
+            'type_of_disability' => 'N/A',
+            'ip_group_member' => 'N/A',
+            'ethnicity' => $this->upper($appointment->ethnicity ?: 'Tagalog'),
             'previous_incumbent' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
         ];
@@ -712,6 +767,18 @@ class AppointmentFormService
             $appointment->last_name,
             $appointment->extension_name,
         ])->filter()->implode(' ');
+    }
+
+    private function checklistEmployeeName(Appointment $appointment): string
+    {
+        $parts = collect([
+            $appointment->first_name,
+            $appointment->middle_name ? strtoupper(mb_substr($appointment->middle_name, 0, 1, 'UTF-8')) . '.' : null,
+            $appointment->last_name,
+            $appointment->extension_name,
+        ])->filter();
+
+        return $parts->implode(' ');
     }
 
     private function employeeNameForAppointmentForm(Appointment $appointment): string
@@ -750,7 +817,7 @@ class AppointmentFormService
             return '';
         }
 
-        return mb_strtoupper($this->numberToWords((int) $salary) . ' pesos', 'UTF-8');
+        return mb_strtoupper($this->numberToWords((int) $salary), 'UTF-8');
     }
 
     private function money(mixed $value): string
@@ -782,5 +849,22 @@ class AppointmentFormService
         return $value instanceof \DateTimeInterface
             ? $value->format('m/d/Y')
             : date('m/d/Y', strtotime((string) $value));
+    }
+
+    private function currentDateFromSigning(mixed $dateOfSigning): string
+    {
+        if (! $dateOfSigning) {
+            return '';
+        }
+
+        $date = $dateOfSigning instanceof \DateTimeInterface
+            ? $dateOfSigning
+            : date_create((string) $dateOfSigning);
+
+        if (! $date) {
+            return '';
+        }
+
+        return $date->format('F Y');
     }
 }

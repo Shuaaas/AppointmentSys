@@ -18,10 +18,6 @@ class AppointmentPolicy
 
     public function view(User $user, Appointment $appointment): bool
     {
-        if ($user->isHr()) {
-            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
-        }
-
         return in_array($user->role, Role::values());
     }
 
@@ -34,21 +30,9 @@ class AppointmentPolicy
     }
 
     /**
-     * Full-record update. Only HR (own records) and Admin.
+     * Full-record update. HR and Admin can update any appointment.
      */
     public function update(User $user, Appointment $appointment): bool
-    {
-        if ($user->isHr()) {
-            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
-        }
-
-        return $user->isAdmin();
-    }
-
-    /**
-     * HR role: can ONLY edit the transaction_number field.
-     */
-    public function updateTransactionNumber(User $user, Appointment $appointment): bool
     {
         return $user->isHr() || $user->isAdmin();
     }
@@ -58,29 +42,17 @@ class AppointmentPolicy
      */
     public function setDateOfSigning(User $user, Appointment $appointment): bool
     {
-        if ($user->isHr()) {
-            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
-        }
-
-        return $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     public function print(User $user, Appointment $appointment): bool
     {
-        if ($user->isHr()) {
-            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
-        }
-
-        return $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     public function archive(User $user, Appointment $appointment): bool
     {
-        if ($user->isHr()) {
-            return (int) ($appointment->user_id ?? 0) === (int) $user->id;
-        }
-
-        return $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     /**
@@ -89,7 +61,7 @@ class AppointmentPolicy
      */
     public function delete(User $user, Appointment $appointment): bool
     {
-        return $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     /**
@@ -98,7 +70,7 @@ class AppointmentPolicy
      */
     public function restore(User $user, Appointment $appointment): bool
     {
-        return $user->isAdmin();
+        return $user->isHr() || $user->isAdmin();
     }
 
     public function forceDelete(User $user, Appointment $appointment): bool

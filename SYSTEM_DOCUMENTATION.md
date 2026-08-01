@@ -218,8 +218,7 @@ The application features a responsive, collapsible sidebar menu that maintains s
 | **Dashboard** | Chart Bar | Admin, HR | `dashboard.index` | Overview KPI cards, statistics, and recent activity metrics. |
 | **Appointments** | File Text | Admin, HR | `appointments.index` | Active appointment list with date filtering, status filters, and actions. |
 | **Create New** | Plus Circle | Admin, HR | `appointments.create` | Form to encode a new appointment with Plantilla item lookup. |
-| **Transaction Numbers** | Hash | Admin, HR | `appointments.transactionNumbers` | Specialized table for updating and validating missing Transaction Numbers. |
-| **Archive** | Archive | Admin, HR | `appointments.archive` | Table of completed appointments possessing valid Transaction Numbers. |
+| **Archive** | Archive | Admin, HR | `appointments.archive` | Table of completed appointments marked via the "Mark completed" button on the Appointment Data page. |
 | **History** | Clock / Calendar | Admin, HR | `history.index` | Complete history of concluded appointments filtered by date range. |
 | **Trash Bin** | Trash | Admin Only | `appointments.trash` | Soft-deleted records management (restore or permanent delete). |
 | **User Management** | Users | Admin Only | `admin.users.index` | User account management, activation, role updates, and invitations. |
@@ -233,8 +232,7 @@ The **Dashboard (`/dashboard`)** provides real-time monitoring and reporting sta
 
 ### 7.1 Metrics & KPI Cards
 * **Total Encoded Appointments:** Total count of active appointments for the selected date or overall.
-* **Needs Transaction Number (Needs TN):** Count of appointments in active/in-progress state awaiting assignment of a Transaction Number.
-* **Completed Appointments:** Count of appointments that have completed processing and possess assigned Transaction Numbers.
+* **Completed Appointments:** Count of appointments that have been marked as completed and moved to Archive.
 * **Completed Today:** Real-time counter of appointments updated to completed state within the current day.
 * **Monthly Volume:** Total number of appointments encoded in the current calendar month.
 
@@ -276,39 +274,24 @@ An appointment progresses through well-defined record states:
 
 ---
 
-## 9. TRANSACTION NUMBERS MODULE
-
-The **Transaction Numbers Module (`/appointments/transaction-numbers`)** handles the assignment of official tracking numbers issued by Records.
-
-### 9.1 Transaction Number Assignment & Workflow
-* HR Officers and Admins can enter or update a `transaction_number` for any active appointment directly in inline table controls or detailed form views.
-* Assigning a non-empty `transaction_number` automatically updates the record's state from `in_progress` / `active` to **`completed`**, making it visible in the Archive.
-
-### 9.2 Real-Time Duplicate Validation
-To guarantee uniqueness across the entire division:
-* The input field calls the AJAX endpoint `/appointments/check-transaction-number?tn={value}&id={appointment_id}`.
-* If the entered transaction number already exists on another appointment record, the UI displays an instant alert preventing submission and highlighting the duplicate conflict.
-
----
-
-## 10. DOCUMENT GENERATION & EXPORT MODULE
+## 9. DOCUMENT GENERATION & EXPORT MODULE
 
 PAMS includes an automated document compilation engine powered by **PHPWord** and **PhpSpreadsheet**.
 
-### 10.1 Supported Document Templates
+### 9.1 Supported Document Templates
 
 | Document Type | File Format | Engine | Template Source | Description |
 | :--- | :---: | :--- | :--- | :--- |
-| **Appointment Form (AFA)** | `.docx` | PHPWord | `SAMPLE APPOINTMENT FORM.docx`<br>`SAMPLE APPOINTMET FOR SHS.docx` | Official CSC KSS Form 33 / Appointment Form filled dynamically. Automatically selects SHS variant when `senior_high_school = 'Yes'`. |
+| **Appointment Form (AFA)** | `.docx` | PHPWord | `SAMPLE APPOINTMENT FORM.docx`<br>`SAMPLE APPOINTMENT FORM FOR HS.docx`<br>`SAMPLE APPOINTMENT FORM FOR SHS.docx` | Official CSC KSS Form 33 / Appointment Form filled dynamically. Template selection: `senior_high_school = 'Yes'` → SHS variant; `senior_high_school = 'No'` + `teaching_level = 'Secondary'` → HS variant; otherwise base template. |
 | **Appointment Processing Checklist** | `.xlsx` | PhpSpreadsheet | `Checklist.xlsx` | Official evaluation checklist containing verification items, qualifications, and plantilla verification notes. |
 | **Report on Appointment Issued (RAI)** | `.xlsx` | PhpSpreadsheet | `Report on Appointment Issued.xlsx` | CSC-mandated RAI report table populated with personal, plantilla, and eligibility details. |
 | **Final Deliberation Document** | `.docx` | PHPWord | `FINAL DELIBERATION_NEW TEMPLATE.docx` | PSB/HRMPSB Final Deliberation minutes and summary sheet. |
 
-### 10.2 Document Download Tracking & Workflow Updates
+### 9.2 Document Download Tracking & Workflow Updates
 * Downloading any of the four individual documents updates tracking timestamps: `afa_downloaded_at`, `checklist_downloaded_at`, `rai_downloaded_at`, or `final_deliberation_downloaded_at`.
 * Triggers automatic state transition of the appointment record from `active` to `in_progress`.
 
-### 10.3 Bulk Export & ZIP Package Generation
+### 9.3 Bulk Export & ZIP Package Generation
 From `/appointments/export/csv`:
 * **Bulk Document Bundle (POST `ids[]`):** Compiles all four generated documents (AFA, Checklist, RAI, Final Deliberation) for every selected appointment into a single structured `.zip` archive file for instant download.
 * **Data CSV Export (GET):** Streams a complete, uncompressed CSV dataset of active appointment records.
@@ -319,7 +302,7 @@ From `/appointments/export/csv`:
 ## 11. HISTORY & ARCHIVE MODULE
 
 ### 11.1 Archive View (`/appointments/archive`)
-* Lists all appointments that have reached **`completed`** status (possessing valid Transaction Numbers).
+* Lists all appointments that have reached **`completed`** status via the "Mark completed" button on the Appointment Data page.
 * Displays updated timestamp, full candidate name, position, district/school, transaction number, and quick document re-download links.
 * Filterable by date range (`from` and `to`) and keyword search.
 
@@ -601,13 +584,10 @@ A structured multi-step form divided into clear logical sections:
 3. *Plantilla & Station Metadata* (Plantilla Item Number autocomplete search, School, District, Incumbent details)
 4. *Eligibility & Appointment History* (Eligibility type, validity, first-time used, original signing dates).
 
-### 19.5 Transaction Numbers Interface (`/appointments/transaction-numbers`)
-A specialized management screen displaying appointments pending transaction number assignment. Includes dynamic AJAX duplicate validation that warns users immediately if an entered transaction number is already assigned elsewhere.
+### 19.5 Archive Interface (`/appointments/archive`)
+A streamlined view listing completed appointments. Displays assigned transaction numbers, encoding dates, candidate details, and direct download buttons for all generated official documents. Appointments are moved to this view when marked as completed via the "Mark completed" button on the Appointment Data page.
 
-### 19.6 Archive Interface (`/appointments/archive`)
-A streamlined view listing completed appointments. Displays assigned transaction numbers, encoding dates, candidate details, and direct download buttons for all generated official documents.
-
-### 19.7 User Management Interface (`/admin/users`)
+### 19.6 User Management Interface (`/admin/users`)
 An administrative control center presenting metric cards (Total, Active, Inactive/Pending), tabbed user listings, role modification dropdowns, user activation toggles, and an **Add User (Invite)** modal.
 
 ---

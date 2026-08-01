@@ -58,10 +58,6 @@
                     <i class="ti ti-file-plus" aria-hidden="true"></i>
                     <span class="nav-label">New Appointment</span>
                 </a>
-                <a href="{{ route('appointments.transactionNumbers') }}" class="nav-link {{ request()->routeIs('appointments.transactionNumbers') ? 'active' : '' }}" data-tooltip="Transaction Numbers">
-                    <i class="ti ti-file-text" aria-hidden="true"></i>
-                    <span class="nav-label">Transaction Numbers</span>
-                </a>
             @endif
             <div class="nav-section-title">History</div>
             <a href="{{ route('history.index') }}" class="nav-link {{ request()->routeIs('history.*') ? 'active' : '' }}" data-tooltip="History">
@@ -98,6 +94,11 @@
         <span class="hr-header-datetime" id="hrHeaderDateTime"></span>
 
         <div class="hr-header-right">
+            <div class="hr-header-user-info">
+                <span class="hr-user-name">{{ auth()->user()->displayName() }}</span>
+                <span class="hr-user-position">{{ auth()->user()->position_title ?: auth()->user()->roleLabel() }}</span>
+            </div>
+
             <button type="button" class="btn-icon" id="hrFullscreenBtn" aria-label="Toggle fullscreen">
                 <i class="ti ti-arrows-maximize" aria-hidden="true" title="Toggle fullscreen"></i>
             </button>

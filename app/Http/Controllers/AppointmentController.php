@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Appointment\BulkDestroyAppointmentRequest;
 use App\Http\Requests\Appointment\ConcludeAppointmentRequest;
+use App\Http\Requests\Appointment\MarkCompletedAppointmentRequest;
 use App\Http\Requests\Appointment\StoreAppointmentRequest;
-use App\Http\Requests\Appointment\UpdateTransactionNumberRequest;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Services\Appointment\DocumentExportService;
@@ -24,31 +24,20 @@ class AppointmentController extends Controller
 
     /**
      * List view — defaults to the latest encoded date only.
-     * HR sees their own appointments; Admin sees all via policy.
+     * HR and Admin see all appointments via policy.
      */
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $availableDates = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->active()
-            ->selectRaw('DATE(encoded_at) as d')
-            ->distinct()
-            ->orderByDesc('d')
-            ->pluck('d');
-
-        $selectedDate   = $request->query('date', $availableDates->first());
+        $selectedDate   = $request->query('date');
         $selectedStatus = $request->query('status');
         $selectedNature = $request->query('nature');
+        $selectedUser   = $request->query('user');
 
-        $visibleStates = ['new', 'active', 'in_progress', 'completed'];
-        if ($request->user()->isHr()) {
-            $visibleStates = ['new', 'active', 'in_progress'];
-        }
+        $visibleStates = ['new', 'active', 'in_progress'];
 
-        $appointmentsQuery = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
+        $baseQuery = Appointment::query()
             ->when($selectedStatus, function ($q, $selectedStatus) {
                 match ($selectedStatus) {
                     'active'      => $q->whereIn('record_state', ['new', 'active']),
@@ -58,37 +47,31 @@ class AppointmentController extends Controller
                 };
             })
             ->when($selectedNature, fn ($q) => $q->where('nature_of_appointment', $selectedNature))
-            ->when($selectedDate,   fn ($q) => $q->whereDate('encoded_at', $selectedDate))
+            ->when($selectedUser, fn ($q) => $q->where('user_id', $selectedUser))
             ->when(! $selectedStatus, fn ($q) => $q->whereIn('record_state', $visibleStates))
             ->search($request->query('q'));
 
+        $availableDates = (clone $baseQuery)
+            ->active()
+            ->selectRaw('DATE(encoded_at) as d')
+            ->distinct()
+            ->orderByDesc('d')
+            ->pluck('d');
+
+        $selectedDate = $selectedDate ?: null;
+
+        $appointmentsQuery = (clone $baseQuery)
+            ->when($selectedDate, fn ($q) => $q->whereDate('encoded_at', $selectedDate))
+            ->orderByDesc('encoded_at');
+
         $appointments = $appointmentsQuery->orderByDesc('encoded_at')->get();
 
-        $needsTNCount = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-            ->count();
-
-        $completedCount = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->whereIn('record_state', ['new', 'active', 'in_progress', 'completed'])
-            ->whereNotNull('transaction_number')
-            ->where('transaction_number', '<>', '')
-            ->count();
-
-        $completedTodayCount = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
-            ->whereIn('record_state', ['new', 'active', 'in_progress', 'completed'])
-            ->whereNotNull('transaction_number')
-            ->where('transaction_number', '<>', '')
-            ->whereDate('updated_at', now())
-            ->count();
-
         $monthlyTotalCount = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
             ->whereYear('encoded_at', now()->year)
             ->whereMonth('encoded_at', now()->month)
             ->count();
+
+        $hrUsers = \App\Models\User::where('role', 'hr')->get();
 
         return view('appointments.index', [
             'appointments'        => $appointments,
@@ -96,60 +79,10 @@ class AppointmentController extends Controller
             'selectedDate'        => $selectedDate,
             'selectedStatus'      => $selectedStatus,
             'selectedNature'      => $selectedNature,
+            'selectedUser'        => $selectedUser,
+            'hrUsers'             => $hrUsers,
             'search'              => $request->query('q'),
-            'needsTNCount'        => $needsTNCount,
-            'completedCount'      => $completedCount,
-            'completedTodayCount' => $completedTodayCount,
             'monthlyTotalCount'   => $monthlyTotalCount,
-        ]);
-    }
-
-    /**
-     * Transaction Numbers page for HR role.
-     * Shows HR's own appointments in a dedicated TN table.
-     */
-    public function transactionNumbers(Request $request): View
-    {
-        $this->authorize('viewAny', Appointment::class);
-
-        $search = $request->query('q', '');
-        $selectedDate = $request->query('date');
-
-        $availableDates = Appointment::query()
-            ->where('user_id', $request->user()->id)
-            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-            ->active()
-            ->selectRaw('DATE(encoded_at) as d')
-            ->distinct()
-            ->orderByDesc('d')
-            ->pluck('d');
-
-        if (!$selectedDate && $availableDates->isNotEmpty()) {
-            $selectedDate = $availableDates->first();
-        }
-
-        $appointmentsQuery = Appointment::query()
-            ->where('user_id', $request->user()->id)
-            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-            ->where('record_state', 'in_progress')
-            ->when($search, fn ($q) => $q->search($search))
-            ->when($selectedDate, fn ($q) => $q->whereDate('encoded_at', $selectedDate))
-            ->orderByDesc('encoded_at');
-
-        $appointments = $appointmentsQuery->get();
-
-        $needsTNCount = Appointment::query()
-            ->where('user_id', $request->user()->id)
-            ->where(fn ($q) => $q->whereNull('transaction_number')->orWhere('transaction_number', ''))
-            ->whereIn('record_state', ['new', 'active', 'in_progress'])
-            ->count();
-
-        return view('appointments.transaction-numbers', [
-            'appointments' => $appointments,
-            'availableDates' => $availableDates,
-            'selectedDate' => $selectedDate,
-            'search' => $search,
-            'needsTNCount' => $needsTNCount,
         ]);
     }
 
@@ -215,54 +148,21 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Lightweight AJAX check for duplicate transaction numbers.
+     * Bulk mark selected appointments as completed — moves them to Archive.
+     * Policy: HR + Admin only.
      */
-    public function checkTransactionNumber(Request $request): \Illuminate\Http\JsonResponse
+    public function markCompleted(MarkCompletedAppointmentRequest $request): RedirectResponse
     {
-        $tn = trim((string) $request->query('tn', ''));
-        $id = $request->query('id');
+        $ids = $request->validated()['ids'];
 
-        $exists = Appointment::query()
-            ->where('transaction_number', $tn)
-            ->when($id, fn ($q) => $q->where('id', '!=', (int) $id))
-            ->exists();
-
-        return response()->json(['exists' => $exists]);
-    }
-
-    /**
-     * HR and Admin role: update ONLY the transaction_number field.
-     */
-    public function updateTransactionNumber(
-        UpdateTransactionNumberRequest $request,
-        Appointment                    $appointment
-    ): RedirectResponse {
-        $this->authorize('updateTransactionNumber', $appointment);
-
-        $newTxn = $request->transaction_number;
-
-        $existing = Appointment::query()
-            ->where('transaction_number', $newTxn)
-            ->where('id', '!=', $appointment->id)
-            ->exists();
-
-        if ($existing) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('duplicate_txn', $newTxn)
-                ->with('duplicate_txn_name', $appointment->full_name);
-        }
-
-        $appointment->update([
-            'transaction_number' => $newTxn,
-            'record_state'       => 'completed',
-        ]);
+        Appointment::whereIn('id', $ids)->update(['record_state' => 'completed']);
 
         return redirect()
             ->route('appointments.archive')
-            ->with('tn_saved', $newTxn)
-            ->with('tn_name', $appointment->full_name);
+            ->with('success', count($ids) > 1
+                ? 'Selected appointments were marked as completed and moved to Archive.'
+                : 'Selected appointment was marked as completed and moved to Archive.'
+            );
     }
 
     /**
@@ -287,8 +187,6 @@ class AppointmentController extends Controller
      */
     public function bulkDestroy(BulkDestroyAppointmentRequest $request): RedirectResponse
     {
-        abort_unless($request->user()->isAdmin(), 403, 'Only Admin can delete appointments.');
-
         $ids = $request->validated()['ids'];
 
         Appointment::whereIn('id', $ids)->update(['record_state' => 'deleted']);
@@ -330,20 +228,25 @@ class AppointmentController extends Controller
 
         $from = $request->query('from');
         $to   = $request->query('to');
+        $selectedUser = $request->query('user');
 
         $appointments = Appointment::query()
-            ->when($request->user()->isHr(), fn ($q) => $q->where('user_id', $request->user()->id))
             ->where('record_state', 'completed')
             ->historyBetween($from, $to)
+            ->when($selectedUser, fn ($q) => $q->where('user_id', $selectedUser))
             ->search($request->query('q'))
             ->orderByDesc('updated_at')
             ->paginate(15)
             ->withQueryString();
 
+        $hrUsers = \App\Models\User::where('role', 'hr')->get();
+
         return view('appointments.archive', [
             'appointments' => $appointments,
             'from'         => $from,
             'to'           => $to,
+            'selectedUser' => $selectedUser,
+            'hrUsers'      => $hrUsers,
             'search'       => $request->query('q'),
         ]);
     }
@@ -504,13 +407,7 @@ class AppointmentController extends Controller
      */
     private function exportBulkZip(array $ids, DocumentExportService $exportService): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $query = Appointment::whereIn('id', $ids);
-
-        if (auth()->user()?->isHr()) {
-            $query->where('user_id', auth()->id());
-        }
-
-        $appointments = $query->get();
+        $appointments = Appointment::whereIn('id', $ids)->get();
 
         if ($appointments->isEmpty()) {
             abort(404, 'No appointments found for selected IDs.');
@@ -530,7 +427,6 @@ class AppointmentController extends Controller
     private function streamCsvExport(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $appointments = Appointment::query()
-            ->when(auth()->user()?->isHr(), fn ($q) => $q->where('user_id', auth()->id()))
             ->active()
             ->orderByDesc('encoded_at')
             ->get();
@@ -594,10 +490,6 @@ class AppointmentController extends Controller
 
         $query = Appointment::whereIn('id', $ids)
             ->where('record_state', 'completed');
-
-        if (auth()->user()?->isHr()) {
-            $query->where('user_id', auth()->id());
-        }
 
         $appointments = $query->get();
 

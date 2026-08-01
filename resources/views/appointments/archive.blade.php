@@ -3,10 +3,26 @@
 @section('title', 'Archive')
 
 @section('content')
+@if (session('success'))
+    <div class="alert alert-success" role="alert" style="margin-bottom:16px">
+        <i class="ti ti-circle-check" aria-hidden="true"></i>
+        <div>{{ session('success') }}</div>
+    </div>
+@endif
 <div class="action-bar">
     <form class="search-wrap" method="GET" action="{{ route('appointments.archive') }}">
         <i class="ti ti-search" aria-hidden="true"></i>
         <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…" onchange="this.form.submit()">
+        <select name="user" onchange="this.form.submit()" aria-label="Filter by encoded by">
+            <option value="">All Users</option>
+            @foreach($hrUsers as $hrUser)
+                <option value="{{ $hrUser->id }}" {{ $selectedUser == $hrUser->id ? 'selected' : '' }}>
+                    {{ $hrUser->name }}
+                </option>
+            @endforeach
+        </select>
+        <input type="hidden" name="from" value="{{ $from }}">
+        <input type="hidden" name="to" value="{{ $to }}">
     </form>
 
     <button type="button" class="btn btn-secondary" id="btn-export-monitoring" onclick="submitMonitoringExport()">
@@ -24,17 +40,19 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('overlay-monitoring-confirm')">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="confirmMonitoringExport()">Export</button>
+                <button type="button" class="btn btn-blue" onclick="confirmMonitoringExport()">Export</button>
             </div>
         </div>
     </div>
 
     <form class="date-control" method="GET" action="{{ route('appointments.archive') }}">
         <div class="date-range">
+            <i class="ti ti-calendar" aria-hidden="true"></i>
             <label for="archive-from">From</label>
             <input type="date" id="archive-from" name="from" value="{{ $from }}">
         </div>
         <div class="date-range">
+            <i class="ti ti-calendar" aria-hidden="true"></i>
             <label for="archive-to">To</label>
             <input type="date" id="archive-to" name="to" value="{{ $to }}">
         </div>
@@ -50,6 +68,7 @@
                 <col style="width:38px"><col style="width:240px">
                 <col style="width:170px"><col style="width:150px">
                 <col style="width:200px"><col style="width:140px">
+                <col style="width:160px">
             </colgroup>
             <thead>
                 <tr>
@@ -59,6 +78,7 @@
                     <th>Nature of appt.</th>
                     <th>Transaction Numbers</th>
                     <th>Date encoded</th>
+                    <th>Encoded By</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,10 +93,11 @@
                         <td><span class="badge badge-teal">{{ $a->nature_of_appointment ?: '—' }}</span></td>
                         <td><span class="badge badge-green">{{ $a->transaction_number ?: '—' }}</span></td>
                         <td style="font-size:12px;color:var(--text-muted)">{{ optional($a->encoded_at)->format('F j, Y') }}</td>
+                        <td style="font-size:12px;color:var(--text-muted)">{{ $a->owner->name ?? '—' }}</td>
                     </tr>
                 @empty
                     <tr class="no-rows">
-                        <td colspan="6" style="border-bottom:0;padding:18px 12px;">
+                        <td colspan="7" style="border-bottom:0;padding:18px 12px;">
                             <p class="empty-note" style="margin:0;">No archived (completed) appointments found.</p>
                         </td>
                     </tr>
@@ -101,6 +122,13 @@ function closeModal(id) {
 function toggleSelectAll(source) {
     document.querySelectorAll('.select-row').forEach(cb => cb.checked = source.checked);
 }
+
+document.getElementById('archive-from').addEventListener('change', function() {
+    document.getElementById('archive-to').min = this.value;
+});
+document.getElementById('archive-to').addEventListener('change', function() {
+    document.getElementById('archive-from').max = this.value;
+});
 
 function submitMonitoringExport() {
     const selected = Array.from(document.querySelectorAll('.select-row:checked')).map(cb => cb.value);

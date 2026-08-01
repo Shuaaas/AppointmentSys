@@ -102,8 +102,8 @@ class ChecklistTemplateResolver
                     'ABM' => 'ABM',
                     'HUMSS' => 'HUMSS',
                     'STEM' => 'STEM',
-                    'TVL TRACK' => 'TVL Track',
-                    'SPORTS TRACK' => 'Sports Track',
+                    'SHS - TVL TRACK' => 'TVL Track',
+                    'SHS - SPORTS TRACK' => 'Sports Track',
                 ];
 
                 if (isset($strandMap[$strand])) {

@@ -40,13 +40,7 @@ class DashboardService
 
     private function scopedQuery(User $user): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Appointment::query();
-
-        if ($user->isHr()) {
-            $query->where('user_id', $user->id);
-        }
-
-        return $query;
+        return Appointment::query();
     }
 
     /**

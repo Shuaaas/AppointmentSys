@@ -173,6 +173,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.875rem 1.125rem;
+  align-items: stretch;
 
   &.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -225,6 +226,8 @@
     font-family: var(--font);
     transition: border .15s, box-shadow .15s;
     width: 100%;
+    min-height: 2.25rem;
+    box-sizing: border-box;
 
     &:focus {
       border-color: var(--accent);
@@ -232,6 +235,11 @@
     }
 
     &::placeholder { color: var(--text-muted); }
+  }
+
+  & input[type="date"] {
+    -webkit-appearance: none;
+    padding: 0.5rem 0.6875rem;
   }
 
   & select {

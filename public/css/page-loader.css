@@ -21,7 +21,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: url('/matatag-bg.png') center center / cover no-repeat;
+    background: url('/deped_bg.jpg') center center / cover no-repeat;
     filter: blur(6px) brightness(0.4) saturate(0.7);
     transform: scale(1.06);
     z-index: 0;

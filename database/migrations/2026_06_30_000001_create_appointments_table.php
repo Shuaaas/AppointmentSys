@@ -20,8 +20,8 @@ return new class extends Migration
             $table->enum('sex', ['Male', 'Female', 'Prefer not to say'])->nullable();
             $table->date('date_of_birth')->nullable();
             $table->string('tin')->nullable();
-            $table->enum('pwd', ['Yes', 'No'])->default('No');
-            $table->enum('ip_group_member', ['Yes', 'No'])->default('No');
+            $table->enum('pwd', ['Yes', 'No', 'N/A'])->default('No');
+            $table->enum('ip_group_member', ['Yes', 'No', 'N/A'])->default('No');
             $table->string('ethnicity')->nullable();
 
             // ── Position and salary ──

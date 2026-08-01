@@ -27,6 +27,9 @@
                         <div><div class="wz-section-title">Appointment</div><div class="wz-section-sub">Core appointment details</div></div>
                     </div>
                     <div class="wz-grid cols3">
+                        <div class="wz-field"><label>Transaction Number</label><input type="text" name="transaction_number" id="f-tn" placeholder="e.g. TN-2026-0001"></div>
+                        <div class="wz-field"><label>Date Received by Records</label><input type="date" name="date_received_records" id="f-drec"></div>
+                        <div class="wz-field"><label>Date Received by HR</label><input type="date" name="date_received_hr" id="f-dhr"></div>
                         <div class="wz-field"><label>Employee last name *</label><input type="text" name="last_name" id="f-last" placeholder="e.g. Dela Cruz" required></div>
                         <div class="wz-field"><label>Employee first name *</label><input type="text" name="first_name" id="f-first" placeholder="e.g. Maria" required></div>
                         <div class="wz-field"><label>Middle name</label><input type="text" name="middle_name" id="f-middle" placeholder="Optional"></div>
@@ -59,12 +62,12 @@
                         <div class="wz-field" style="position:relative"><label>Plantilla number</label><input type="text" name="plantilla_item_number" id="f-plantilla-item" placeholder="e.g. OSEC-DECSB-T3-123456" autocomplete="off"><div id="plantilla-dropdown" class="plantilla-dropdown" style="display:none"></div></div>
                         <div class="wz-field"><label>Page number</label><input type="text" name="plantilla_page_number" id="f-plantilla-page" placeholder="e.g. 12"></div>
 
-                        <div class="wz-field span2"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine pesos" readonly></div>
+                        <div class="wz-field span2"><label>Salary in words (₱)</label><input type="text" name="compensation_words" id="f-salwords" placeholder="e.g. Twenty-five thousand four hundred thirty-nine" readonly></div>
                         <div class="wz-field"><label>Salary in numbers (₱)</label><input type="text" name="compensation_numbers" id="f-salnums" placeholder="e.g. 25439.00" readonly></div>
 
                         <div class="wz-field"><label>Nature of Appointment *</label>
                             <select name="nature_of_appointment" id="f-nature" required>
-                                <option value="">Select</option><option>Original</option><option>Promotion</option><option>Demotion</option><option>Transfer</option><option>Re-Classification</option><option>Re-Employment</option><option>Re-Appointment</option>
+                                <option value="">Select</option><option>Original</option><option>Promotion</option><option>Demotion</option><option>Transfer</option><option>Reclassification</option><option>Reemployment</option><option>Reappointment</option>
                             </select>
                         </div>
                         <div class="wz-field"><label>Incumbent</label><input type="text" name="incumbent" id="f-incumbent" placeholder="Full name"></div>
@@ -91,7 +94,7 @@
                             <div class="wz-field"><label>Deliberation Date</label><input type="date" name="deliberation_date" id="f-deliberation"></div>
                             <div class="wz-na-field" style="display:none"><label>Deliberation Date</label><input type="text" class="wz-na-input" value="Not Applicable" disabled tabindex="-1"></div>
                         </div>
-                        <div class="wz-field"><label>TIN</label><input type="text" name="tin" id="f-tin" placeholder="9 digits" maxlength="9"></div>
+                        <div class="wz-field"><label>TIN</label><input type="text" name="tin" id="f-tin" placeholder="12 digits" maxlength="15"></div>
                     </div>
                 </div>
 
@@ -134,7 +137,7 @@
                             </div>
                             <div class="wz-field"><label>Eligibility</label>
                                 <select name="eligibility_type" id="f-elig">
-                                    <option value="">Select</option><option value="LET">LET</option><option value="PVET">PVET</option><option value="CSP">CSP</option><option value="CSSP">CSSP</option>
+                                    <option value="">Select</option><option value="LET">LET</option><option value="PBET">PBET</option><option value="CSP">CSP</option><option value="CSSP">CSSP</option>
                                 </select>
                             </div>
                             <div class="wz-field"><label>Date of Validity of Eligibility</label><input type="date" name="eligibility_validity" id="f-eligvalid"></div>
@@ -187,6 +190,16 @@
                             <label>Result</label>
                             <div id="fd-result" style="padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-weight:600;background:var(--accent-light);color:var(--text-primary)"></div>
                         </div>
+                        <div class="wz-field">
+                            <label>Prepared By</label>
+                            <select name="prepared_by" id="f-prepared-by" onchange="if(this.value==='OTHERS'){openOthersModal('f-prepared-by')}">
+                                <option value="">Select</option>
+                                <option value="MIKA C. TRINIDAD">MIKA C. TRINIDAD</option>
+                                <option value="ANGELICA R. CABRAL">ANGELICA R. CABRAL</option>
+                                <option value="DIVINA GRACIA E. COSTELO">DIVINA GRACIA E. COSTELO</option>
+                                <option value="OTHERS">OTHERS</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -211,18 +224,18 @@
                             </select>
                         </div>
                         <div class="wz-field"><label>Date of Birth <span class="req">*</span></label><input type="date" name="date_of_birth" id="f-dob" required></div>
-                        <div class="wz-field"><label>PWD? <span class="req">*</span></label>
-                            <select name="pwd" id="f-pwd" required>
-                                <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
+                        <div class="wz-field"><label>PWD?</label>
+                            <select name="pwd" id="f-pwd" style="pointer-events:none">
+                                <option value="N/A" selected>N/A</option>
                             </select>
                         </div>
-                        <div class="wz-field"><label>Type of Disability</label><input type="text" name="type_of_disability" id="f-pwdtype" placeholder="e.g. Permanent physical disability"></div>
-                        <div class="wz-field"><label>Member of IP Group? <span class="req">*</span></label>
-                            <select name="ip_group_member" id="f-ip" required>
-                                <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
+                        <div class="wz-field"><label>Type of Disability</label><input type="text" name="type_of_disability" id="f-pwdtype" value="N/A" readonly class="wz-disabled-fill"></div>
+                        <div class="wz-field"><label>Member of IP Group?</label>
+                            <select name="ip_group_member" id="f-ip" style="pointer-events:none">
+                                <option value="N/A" selected>N/A</option>
                             </select>
                         </div>
-                        <div class="wz-field span2"><label>Ethnicity</label><input type="text" name="ethnicity" id="f-ethnicity" placeholder="e.g. Tagalog, Bisaya"></div>
+                        <div class="wz-field span2"><label>Ethnicity</label><input type="text" name="ethnicity" id="f-ethnicity" value="Tagalog" readonly class="wz-disabled-fill"></div>
                     </div>
                 </div>
 
@@ -472,18 +485,10 @@ function syncReadonly() {
     set('rx-md-poslevel', wg('f-poslevel'));
     set('rx-md-sex', wg('f-sex'));
     set('rx-md-dob', wg('f-dob'));
-    const pwdVal = wg('f-pwd');
-    set('rx-md-pwd', pwdVal);
-    if (pwdVal === 'Yes') {
-        set('rx-md-pwdtype', wg('f-pwdtype') || '—');
-    } else if (pwdVal === 'No') {
-        const pwdTypeEl = document.getElementById('rx-md-pwdtype');
-        if (pwdTypeEl && !pwdTypeEl.value) pwdTypeEl.value = 'N/A';
-    } else {
-        set('rx-md-pwdtype', '');
-    }
-    set('rx-md-ip', wg('f-ip'));
-    set('rx-md-ethnicity', wg('f-ethnicity') || '—');
+    set('rx-md-pwd', 'N/A');
+    set('rx-md-pwdtype', 'N/A');
+    set('rx-md-ip', 'N/A');
+    set('rx-md-ethnicity', 'Tagalog');
 }
 
 function syncDateFieldsByStatus() {
@@ -554,16 +559,17 @@ function wzBuildReview() {
         { title: 'Final Deliberation', rows: [
             ['Employee name', rxv('rx-fd-empname')], ['Position', rxv('rx-fd-pos')],
             ['Date of signing', rxv('rx-fd-dosign')], ['School', rxv('rx-fd-school')],
-            ['Non teaching?', wg('f-nonteaching')], ['Result', fdResult()]
+            ['Non teaching?', wg('f-nonteaching')], ['Result', fdResult()],
+            ['Prepared By', wg('f-prepared-by')]
         ]},
         { title: 'Monitoring Data', rows: [
             ['Employee name', wzEmployeeName()], ['Position', wg('f-pos')],
             ['Date of Last Promotion', wg('f-dlp')], ['Position From', wg('f-pfrom')],
             ['Name of Previous Incumbent', wg('f-prev') || 'Vacant'],
             ['Position Level', wg('f-poslevel')],
-            ['Sex', wg('f-sex')], ['Date of Birth', wg('f-dob')], ['PWD?', wg('f-pwd')],
-            ['Type of Disability', wg('f-pwdtype') || (wg('f-pwd') === 'No' ? 'N/A' : '—')],
-            ['Member of IP Group?', wg('f-ip')], ['Ethnicity', wg('f-ethnicity') || '—']
+            ['Sex', wg('f-sex')], ['Date of Birth', wg('f-dob')],             ['PWD?', 'N/A'],
+            ['Type of Disability', 'N/A'],
+            ['Member of IP Group?', 'N/A'], ['Ethnicity', 'Tagalog']
         ]}
     ];
     const reviewEl = document.getElementById('wz-review-content');
@@ -582,6 +588,11 @@ function wzGoNext() {
     }
     if (wzCurrent === 0 && (!document.getElementById('f-pos').value || !document.getElementById('f-estatus').value || !document.getElementById('f-nature').value)) {
         wzShowWarning('Please fill in the required fields (Position, Employment status, Appointment nature) before continuing.');
+        return;
+    }
+    const validNatures = ['Original', 'Promotion', 'Demotion', 'Transfer', 'Reclassification', 'Reemployment', 'Reappointment'];
+    if (wzCurrent === 0 && document.getElementById('f-nature').value && !validNatures.includes(document.getElementById('f-nature').value)) {
+        wzShowWarning('Please select a valid nature of appointment before continuing.');
         return;
     }
     if (wzCurrent === WZ_TOTAL - 1) wzBuildReview();
@@ -654,22 +665,11 @@ function syncFinalDeliberation() {
 }
 
 function syncPwdType() {
-    const pwdSelect = document.getElementById('f-pwd');
     const pwdTypeInput = document.getElementById('f-pwdtype');
-    if (!pwdSelect || !pwdTypeInput) return;
-    if (pwdSelect.value === 'No') {
-        pwdTypeInput.value = 'N/A';
-        pwdTypeInput.disabled = true;
-        pwdTypeInput.classList.add('wz-disabled-fill');
-    } else if (pwdSelect.value === 'Yes') {
-        pwdTypeInput.value = '';
-        pwdTypeInput.disabled = false;
-        pwdTypeInput.classList.remove('wz-disabled-fill');
-    } else {
-        pwdTypeInput.value = '';
-        pwdTypeInput.disabled = false;
-        pwdTypeInput.classList.remove('wz-disabled-fill');
-    }
+    if (!pwdTypeInput) return;
+    pwdTypeInput.value = 'N/A';
+    pwdTypeInput.disabled = true;
+    pwdTypeInput.classList.add('wz-disabled-fill');
 }
 
 // Show server-side validation errors in the warning modal
@@ -685,6 +685,10 @@ var wzForm = document.getElementById('wizard-form');
 if (wzForm) {
     wzForm.addEventListener('input', syncReadonly);
     wzForm.addEventListener('change', syncReadonly);
+    wzForm.addEventListener('submit', function () {
+        var tin = document.getElementById('f-tin');
+        if (tin) tin.value = tin.value.replace(/-/g, '');
+    });
 }
 
 var estatusSelect = document.getElementById('f-estatus');
@@ -910,7 +914,8 @@ function initWizardModal() {
     const tin = document.getElementById('f-tin');
     if (tin) {
         tin.addEventListener('input', function () {
-            tin.value = tin.value.replace(/\D/g, '').slice(0, 9);
+            var digits = this.value.replace(/\D/g, '').slice(0, 12);
+            this.value = digits.replace(/(\d{3})(?=\d)/g, '$1-');
         });
     }
 

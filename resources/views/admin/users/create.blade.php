@@ -18,7 +18,7 @@
             align-items: center;
             justify-content: center;
             padding: 2.5rem 1rem;
-            background: url('{{ asset('matatag-bg.png') }}') center center / cover no-repeat;
+            background: url('{{ asset('deped_bg.jpg') }}') center center / cover no-repeat;
             overflow: hidden;
         }
         .add-user-page::after {

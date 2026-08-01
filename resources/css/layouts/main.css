@@ -85,6 +85,27 @@
   transform: translateX(-50%);
 }
 
+/* ── User info in header ──────────────── */
+.hr-header-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  color: #e8edf0;
+}
+
+.hr-user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.hr-user-position {
+  font-size: 0.65rem;
+  opacity: 0.8;
+  line-height: 1;
+}
+
 /* ── Pagebar (breadcrumb / page title) ─ */
 .hr-pagebar {
   background-color: var(--color-white);

@@ -32,14 +32,14 @@
             <table class="table user-table">
                 <colgroup>
                     <col class="col-name">
-                    <col class="col-role">
+                    <col class="col-position">
                     <col class="col-status">
                     <col class="col-action">
                 </colgroup>
                 <thead>
                     <tr>
                         <th class="th-name">Name</th>
-                        <th class="th-center">Role</th>
+                        <th class="th-center">Position</th>
                         <th class="th-center">Status</th>
                         <th class="th-center">Action</th>
                     </tr>
@@ -49,7 +49,6 @@
                         @php
                             $parts = array_filter(explode(' ', $user->name));
                             $initials = strtoupper(substr($parts[0] ?? '', 0, 1) . substr($parts[count($parts) - 1] ?? '', 0, 1));
-                            $roleClass = 'role-' . $user->role;
                         @endphp
                         <tr>
                             <td class="td-name">
@@ -61,7 +60,14 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="td-center"><span class="badge {{ $roleClass }}">{{ $user->roleLabel() }}</span></td>
+                            <td class="td-center">
+                                <input type="text"
+                                       class="position-input"
+                                       data-user-id="{{ $user->id }}"
+                                       placeholder="e.g. Administrative Assistant III"
+                                       value="{{ $user->position_title }}"
+                                       style="width:100%;padding:4px 8px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                            </td>
                             <td class="td-center">
                                 <span class="status-pill {{ $user->is_active ? 'active' : 'inactive' }}">
                                     <span class="status-dot"></span>
@@ -197,6 +203,70 @@
         document.addEventListener('hr:page:load', initializeUserDeactivationModalSafely);
         if (document.readyState !== 'loading') {
             initializeUserDeactivationModalSafely();
+        }
+
+        function initPositionInputs() {
+            const inputs = document.querySelectorAll('.position-input');
+            let timeout = null;
+
+            inputs.forEach(function (input) {
+                input.addEventListener('blur', function () {
+                    if (timeout) clearTimeout(timeout);
+                    savePosition(this);
+                });
+
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (timeout) clearTimeout(timeout);
+                        savePosition(this);
+                    }
+                });
+
+                input.addEventListener('input', function () {
+                    if (timeout) clearTimeout(timeout);
+                    timeout = setTimeout(() => savePosition(this), 1500);
+                });
+            });
+        }
+
+        function savePosition(input) {
+            const userId = input.dataset.userId;
+            const value = input.value.trim();
+            const originalValue = input.value;
+
+            fetch('/admin/users/' + userId + '/position', {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ position_title: value }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    input.style.borderColor = 'var(--green)';
+                    setTimeout(() => {
+                        input.style.borderColor = '';
+                    }, 1500);
+                } else {
+                    input.value = originalValue;
+                    input.style.borderColor = 'var(--red)';
+                }
+            })
+            .catch(() => {
+                input.value = originalValue;
+                input.style.borderColor = 'var(--red)';
+            });
+        }
+
+        document.addEventListener('hr:page:load', initPositionInputs);
+        if (document.readyState !== 'loading') {
+            initPositionInputs();
+        } else {
+            document.addEventListener('DOMContentLoaded', initPositionInputs);
         }
     </script>
 @endsection

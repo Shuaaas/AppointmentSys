@@ -9,7 +9,6 @@ use App\Http\Requests\Admin\ResetPasswordRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
-use App\Services\InvitationService;
 use App\Services\User\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +17,7 @@ use Illuminate\View\View;
 class UserController extends Controller
 {
     public function __construct(
-        private readonly UserService $userService,
-        private readonly InvitationService $invitationService
+        private readonly UserService $userService
     ) {}
 
     /**
@@ -90,19 +88,18 @@ class UserController extends Controller
     }
 
     /**
-      * Create a user account directly (active immediately, no approval step).
-      * Sends a confirmation email; the account is only created after the user
-      * clicks the confirmation button in the email.
-      */
+     * Create a user account directly (active immediately, no approval step).
+     * The account is created immediately without sending a confirmation email.
+     */
     public function addUser(AddUserRequest $request): RedirectResponse
     {
         $this->authorize('create', User::class);
 
-        $this->invitationService->create($request->validated());
+        $this->userService->createDirect($request->validated());
 
         return redirect()
             ->route('admin.users.create')
-            ->with('success', 'Invitation sent successfully. The user must confirm via email before the account is created.');
+            ->with('success', 'User added successfully.');
     }
 
     /**
@@ -133,6 +130,28 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * Update a user's position_title via AJAX.
+     * Policy: Admin only.
+     */
+    public function updatePosition(Request $request, User $user): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $request->validate([
+            'position_title' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $user->update([
+            'position_title' => $request->input('position_title'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'position_title' => $user->position_title,
+        ]);
     }
 
     /**

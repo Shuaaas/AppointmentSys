@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class Appointment extends Model
 {
     use HasFactory, SoftDeletes;
-    
+
     protected $appends = ['display_record_state', 'salary_grade_and_step'];
 
     protected $fillable = [
@@ -66,6 +66,7 @@ class Appointment extends Model
         'substitute_to',
         'assessment_date',
         'deliberation_date',
+        'prepared_by',
         'education',
         'senior_high_school',
         'senior_high_strand',
@@ -130,9 +131,30 @@ class Appointment extends Model
     }
 
     /* ── Accessors ── */
+    public function getNatureOfAppointmentAttribute($value)
+    {
+        return match ($value) {
+            'Re-Classification' => 'Reclassification',
+            'Re-Employment' => 'Reemployment',
+            'Re-Appointment' => 'Reappointment',
+            default => $value,
+        };
+    }
+
+    public function setNatureOfAppointmentAttribute($value)
+    {
+        $this->attributes['nature_of_appointment'] = match ($value) {
+            'Reclassification' => 'Re-Classification',
+            'Reemployment' => 'Re-Employment',
+            'Reappointment' => 'Re-Appointment',
+            default => $value,
+        };
+    }
+
     public function getFullNameAttribute(): string
     {
-        $middleInitial = $this->middle_name ? ' ' . Str::substr($this->middle_name, 0, 1) . '.' : '';
+        $middleInitial = $this->middle_name ? ' '.Str::substr($this->middle_name, 0, 1).'.' : '';
+
         return "{$this->last_name}, {$this->first_name}{$middleInitial}";
     }
 
@@ -164,7 +186,7 @@ class Appointment extends Model
             return null;
         }
 
-        return trim(($grade ?: '') . ($grade && $step ? '-' : '') . ($step ?: ''));
+        return trim(($grade ?: '').($grade && $step ? '-' : '').($step ?: ''));
     }
 
     public function markDownloaded(string $type): void
@@ -224,6 +246,7 @@ class Appointment extends Model
         if ($to) {
             $query->whereDate('date_concluded', '<=', $to);
         }
+
         return $query;
     }
 
@@ -245,13 +268,14 @@ class Appointment extends Model
         if (! $term) {
             return $query;
         }
+
         return $query->where(function (Builder $q) use ($term) {
             $q->where('last_name', 'like', "%{$term}%")
-              ->orWhere('first_name', 'like', "%{$term}%")
-              ->orWhere('school_district', 'like', "%{$term}%")
-              ->orWhere('eligibility_type', 'like', "%{$term}%")
-              ->orWhere('nature_of_appointment', 'like', "%{$term}%")
-               ->orWhere('reason', 'like', "%{$term}%");
+                ->orWhere('first_name', 'like', "%{$term}%")
+                ->orWhere('school_district', 'like', "%{$term}%")
+                ->orWhere('eligibility_type', 'like', "%{$term}%")
+                ->orWhere('nature_of_appointment', 'like', "%{$term}%")
+                ->orWhere('reason', 'like', "%{$term}%");
         });
     }
 

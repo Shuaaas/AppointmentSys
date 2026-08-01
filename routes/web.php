@@ -58,28 +58,21 @@ Route::middleware('auth')->group(function () {
             Route::get('/{appointment}/final-deliberation/download', [AppointmentController::class, 'downloadFinalDeliberation'])->name('downloadFinalDeliberation');
             Route::match(['get', 'post'], '/export/csv', [AppointmentController::class, 'exportCsv'])->name('export');
             Route::post('/export/monitoring', [AppointmentController::class, 'exportMonitoringCsv'])->name('archive.exportMonitoring');
-
-            Route::get('/transaction-numbers', [AppointmentController::class, 'transactionNumbers'])->name('transactionNumbers');
         });
 
         Route::middleware([EnsureUserHasRole::class.':hr,admin'])->group(function () {
-            Route::patch('/{appointment}/transaction-number', [AppointmentController::class, 'updateTransactionNumber'])
-                ->name('updateTransactionNumber');
-            Route::get('/check-transaction-number', [AppointmentController::class, 'checkTransactionNumber'])
-                ->name('checkTransactionNumber');
-        });
+            Route::post('/mark-completed', [AppointmentController::class, 'markCompleted'])->name('markCompleted');
 
-        Route::middleware([EnsureUserHasRole::class.':admin'])->group(function () {
-            Route::delete('/{appointment}', [AppointmentController::class, 'destroy'])
-                ->name('destroy');
             Route::get('/trash', [AppointmentController::class, 'trash'])
                 ->name('trash');
-            Route::post('/{appointment}/restore', [AppointmentController::class, 'restore'])
-                ->name('restore');
-            Route::delete('/{appointment}/force-delete', [AppointmentController::class, 'forceDelete'])
-                ->name('forceDelete');
             Route::delete('/bulk-destroy', [AppointmentController::class, 'bulkDestroy'])
                 ->name('bulkDestroy');
+            Route::post('/{id}/restore', [AppointmentController::class, 'restore'])
+                ->name('restore');
+            Route::delete('/{id}/force-delete', [AppointmentController::class, 'forceDelete'])
+                ->name('forceDelete');
+            Route::delete('/{appointment}', [AppointmentController::class, 'destroy'])
+                ->name('destroy');
         });
     });
 
@@ -94,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users/create', [UserController::class, 'addUser'])->name('users.add');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::patch('/users/{user}/position', [UserController::class, 'updatePosition'])->name('users.updatePosition');
         Route::patch('/users/{user}/role', [UserController::class, 'assignRole'])->name('users.assignRole');
         Route::patch('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
