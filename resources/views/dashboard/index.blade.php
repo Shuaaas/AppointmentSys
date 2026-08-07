@@ -27,15 +27,6 @@
 
         <div class="stat-card">
             <div class="stat-head">
-                <span class="stat-label">Pending approvals</span>
-                <span class="stat-icon"><i class="ti ti-clock" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value">{{ $pendingCount }}</div>
-            <div class="stat-sub">{{ $pendingCount === 0 ? 'No pending requests' : $pendingCount . ' awaiting review' }}</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-head">
                 <span class="stat-label">Total appointments</span>
                 <span class="stat-icon"><i class="ti ti-file-description" aria-hidden="true"></i></span>
             </div>
@@ -44,50 +35,7 @@
         </div>
     </div>
 
-    <div class="dash-grid">
-        <div class="dash-card">
-            <div class="dash-card-title">Pending account approvals</div>
-            @if ($pendingRequests->isEmpty())
-                <p class="empty-note">No pending account approvals at this time.</p>
-            @else
-                <div class="table-card">
-                    <div class="tbl-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th style="text-align:right;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($pendingRequests as $user)
-                                    <tr class="data-row">
-                                        <td>{{ $user->name }}</td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>{{ ucfirst($user->role) }}</td>
-                                        <td style="text-align:right;">
-                                            <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="approval-form" style="display:inline-block;" data-user-name="{{ $user->name }}" data-action="approve">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="button" class="btn btn-sm btn-primary approval-trigger">Approve</button>
-                                            </form>
-                                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="approval-form" style="display:inline-block; margin-left:8px;" data-user-name="{{ $user->name }}" data-action="reject">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="button" class="btn btn-sm btn-danger approval-trigger">Reject</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
-        </div>
-
+    <div class="dash-grid full-width">
         <div class="dash-card">
             <div class="dash-card-title">Active user accounts</div>
             @if ($activeAccounts->isEmpty())
@@ -118,74 +66,6 @@
             @endif
         </div>
     </div>
-
-    <div id="approval-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-        <div style="width:min(420px, 100%); background:#fff; border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.2); padding:24px; text-align:center;">
-            <h3 id="approval-confirm-title" style="margin:0 0 10px; font-size:20px;">Approve account?</h3>
-            <p id="approval-confirm-text" style="margin:0 0 20px; color:#475569;">Are you sure you want to approve this account?</p>
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button type="button" class="btn btn-secondary" id="approval-cancel-btn">Cancel</button>
-                <button type="button" class="btn btn-primary" id="approval-confirm-btn">Approve</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function initDashboardApprovalModal() {
-            const modal = document.getElementById('approval-confirm-modal');
-            const title = document.getElementById('approval-confirm-title');
-            const text = document.getElementById('approval-confirm-text');
-            const cancelBtn = document.getElementById('approval-cancel-btn');
-            const confirmBtn = document.getElementById('approval-confirm-btn');
-            let pendingForm = null;
-
-            document.querySelectorAll('.approval-form').forEach(function (form) {
-                form.querySelector('.approval-trigger').addEventListener('click', function () {
-                    pendingForm = form;
-                    const userName = form.dataset.userName || 'this account';
-                    const action = form.dataset.action === 'reject' ? 'reject' : 'approve';
-
-                    title.textContent = action === 'reject' ? 'Reject account?' : 'Approve account?';
-                    text.textContent = action === 'reject'
-                        ? 'Are you sure you want to reject ' + userName + '?'
-                        : 'Are you sure you want to approve ' + userName + '?';
-                    confirmBtn.textContent = action === 'reject' ? 'Reject' : 'Approve';
-                    confirmBtn.className = action === 'reject' ? 'btn btn-danger' : 'btn btn-primary';
-                    modal.style.display = 'flex';
-                });
-            });
-
-            function closeModal() {
-                modal.style.display = 'none';
-                pendingForm = null;
-            }
-
-            cancelBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            confirmBtn.addEventListener('click', function () {
-                if (pendingForm) {
-                    pendingForm.submit();
-                }
-            });
-        }
-
-        function initializeDashboardApprovalModalSafely() {
-            window.requestAnimationFrame(function () {
-                initDashboardApprovalModal();
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeDashboardApprovalModalSafely);
-        document.addEventListener('hr:page:load', initializeDashboardApprovalModalSafely);
-        if (document.readyState !== 'loading') {
-            initializeDashboardApprovalModalSafely();
-        }
-    </script>
 
 @else
     <div class="stat-grid">
@@ -234,14 +114,19 @@
                 @foreach ($trend as $point)
                     <div class="bar-col">
                         <div class="bar-stack">
-                            <div class="bar-seg" style="height: {{ round($point['count'] / $maxVal * 110) }}px"></div>
+                            @if ($point['count'] > 0)
+                                @php
+                                    $barHeight = max(16, (int) round(($point['count'] / $maxVal) * 110));
+                                @endphp
+                                <div class="bar-seg" style="height: {{ $barHeight }}px; min-height: 16px; background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);"></div>
+                            @endif
                         </div>
                         <span class="bar-month">{{ $point['label'] }}</span>
                     </div>
                 @endforeach
             </div>
             <div class="chart-legend">
-                    <span><span class="legend-dot" style="background:var(--hr-primary, #003087)"></span>Appointments encoded</span>
+                <span><span class="legend-dot legend-dot-primary"></span>Appointments encoded</span>
             </div>
         </div>
 
@@ -249,29 +134,32 @@
             <div class="dash-card-title">Appointments by status</div>
             @php
                 $statusChart = [
-                    'Active'      => ['count' => $statusCounts['Active'], 'color' => '#1565C0'],
-                    'In Progress' => ['count' => $statusCounts['In Progress'], 'color' => '#C8870B'],
-                    'Completed'   => ['count' => $statusCounts['Completed'], 'color' => '#1F7A44'],
+                    'Active'      => ['count' => $statusCounts['Active'] ?? 0, 'color' => '#1565C0'],
+                    'In Progress' => ['count' => $statusCounts['In Progress'] ?? 0, 'color' => '#C8870B'],
+                    'Completed'   => ['count' => $statusCounts['Completed'] ?? 0, 'color' => '#1F7A44'],
                 ];
                 $statusMax = max(array_merge(array_column($statusChart, 'count'), [1]));
                 $statusTotal = array_sum(array_column($statusChart, 'count'));
 
                 $acc = 0;
                 $pieSegments = [];
-                foreach ($statusChart as $label => $item) {
-                    $start = $statusTotal ? ($acc / $statusTotal * 100) : 0;
-                    $acc += $item['count'];
-                    $end = $statusTotal ? ($acc / $statusTotal * 100) : 0;
-                    $pieSegments[] = $item['color'] . ' ' . $start . '% ' . $end . '%';
+                if ($statusTotal > 0) {
+                    foreach ($statusChart as $label => $item) {
+                        if ($item['count'] <= 0) continue;
+                        $start = round(($acc / $statusTotal) * 100, 2);
+                        $acc += $item['count'];
+                        $end = round(($acc / $statusTotal) * 100, 2);
+                        $pieSegments[] = $item['color'] . ' ' . $start . '% ' . $end . '%';
+                    }
                 }
-                $pieGradient = implode(', ', $pieSegments);
+                $pieGradient = !empty($pieSegments) ? implode(', ', $pieSegments) : '#e5e7eb 0% 100%';
             @endphp
             @if ($statusTotal === 0)
                 <p class="empty-note">No appointments encoded yet.</p>
             @else
                 <div class="status-pie-wrap">
                     <div class="status-pie-box">
-                        <div class="status-pie" style="background: conic-gradient({{ $pieGradient }});"></div>
+                        <div class="status-pie" style="background-image: conic-gradient({{ $pieGradient }});"></div>
                         <div class="status-pie-center">
                             <span class="status-pie-total">{{ $statusTotal }}</span>
                             <span class="status-pie-label">Total</span>
@@ -280,27 +168,30 @@
 
                     <div class="status-list">
                         @foreach ($statusChart as $label => $item)
+                            @php
+                                $fillWidth = $statusMax > 0 ? (int) round(($item['count'] / $statusMax) * 100) : 0;
+                            @endphp
                             <div class="status-row">
                                 <span class="status-name">{{ $label }}</span>
                                 <div class="status-bar-track">
-                                    <div class="status-bar-fill" style="width: {{ round($item['count'] / $statusMax * 100) }}%; background: {{ $item['color'] }}"></div>
+                                    <div class="status-bar-fill" style="width: {{ $fillWidth }}%; background-color: {{ $item['color'] }};"></div>
                                 </div>
                                 <span class="status-count">{{ $item['count'] }}</span>
                             </div>
                         @endforeach
                     </div>
                 </div>
-                <div class="chart-legend" style="margin-top:14px; justify-content:center; flex-wrap:wrap;">
-                    <span><span class="legend-dot" style="background:#1565C0"></span>Active</span>
-                    <span><span class="legend-dot" style="background:#C8870B"></span>In Progress</span>
-                    <span><span class="legend-dot" style="background:#1F7A44"></span>Completed</span>
+                <div class="chart-legend chart-legend-status">
+                    <span><span class="legend-dot legend-dot-active"></span>Active</span>
+                    <span><span class="legend-dot legend-dot-progress"></span>In Progress</span>
+                    <span><span class="legend-dot legend-dot-completed"></span>Completed</span>
                 </div>
             @endif
         </div>
     </div>
 
         @if (auth()->user()?->isHr())
-        <div class="dash-grid full-width" style="margin-top: 18px;">
+        <div class="dash-grid full-width recent-grid">
             <div class="dash-card">
                 <div class="dash-card-title">Recently encoded</div>
                 @if ($recent->isEmpty())
@@ -333,3 +224,7 @@
 
 @endif
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('js/dashboard.js') }}"></script>
+@endpush

@@ -5,8 +5,6 @@ namespace App\Services\Appointment;
 use App\Models\Appointment;
 use App\Services\AppointmentFormService;
 use Illuminate\Support\Facades\File;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use ZipArchive;
 use RuntimeException;
 
@@ -109,14 +107,6 @@ class DocumentExportService
             \Log::error("Failed to generate checklist for {$txn}: {$e->getMessage()}");
         }
 
-        // Combined Data Excel
-        try {
-            $path    = $this->generateCombinedDataExcel($appointment);
-            $files[] = ['path' => $path, 'name' => "{$folderName}/{$personPart}_Data.xlsx"];
-        } catch (\Throwable $e) {
-            \Log::error("Failed to generate combined data for {$txn}: {$e->getMessage()}");
-        }
-
         return $files;
     }
 
@@ -199,74 +189,6 @@ class DocumentExportService
         }
     }
 
-    private function generateCombinedDataExcel(Appointment $appointment): string
-    {
-        $outputPath = storage_path('app/temp/appointment-forms')
-            . DIRECTORY_SEPARATOR
-            . sprintf('data-%s-%s.xlsx', $appointment->id, now()->format('YmdHis'));
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $headers = [
-            'Transaction Number', 'Last Name', 'First Name', 'Middle Name', 'Extension Name',
-            'Full Name', 'Position Title', 'Salary Grade', 'Employee Status', 'School District',
-            'School', 'Plantilla Item Number', 'Plantilla Page Number', 'Compensation Words',
-            'Compensation Numbers', 'Nature of Appointment', 'Previous Incumbent', 'Natural Vacancy',
-            'Date Original Appointment', 'Date of Signing', 'Eligibility Validity',
-            'Education', 'Senior High School', 'Senior High Strand', 'Non Teaching',
-        ];
-
-        $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->getFont()->setBold(true);
-
-        $a = $appointment;
-        $row = [
-            $a->transaction_number,
-            $a->last_name,
-            $a->first_name,
-            $a->middle_name,
-            $a->extension_name,
-            $a->full_name,
-            $a->position_title,
-            $a->salary_grade_and_step,
-            $a->employee_status,
-            $a->school_district,
-            $a->school,
-            $a->plantilla_item_number,
-            $a->plantilla_page_number,
-            $a->compensation_words,
-            $a->compensation_numbers,
-            $a->nature_of_appointment,
-            $a->previous_incumbent ?: 'Vacant',
-            $a->natural_vacancy ?: 'N/A',
-            $this->formatDate($a->date_original_appointment),
-            $this->formatDate($a->date_of_signing),
-            $this->formatDate($a->eligibility_validity),
-            $a->education,
-            $a->senior_high_school,
-            $a->senior_high_strand,
-            $a->non_teaching,
-        ];
-
-        $sheet->fromArray($row, null, 'A2');
-
-        foreach ($sheet->getColumnIterator() as $column) {
-            $sheet->getColumnDimension($column->getColumnIndex())->setAutoSize(true);
-        }
-
-        $sheet->setAutoFilter($sheet->calculateWorksheetDimension());
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($outputPath);
-
-        if (! File::exists($outputPath)) {
-            throw new RuntimeException('Combined data Excel could not be generated.');
-        }
-
-        return $outputPath;
-    }
-
     private function formatDate($value): ?string
     {
         if (! $value) {
@@ -274,15 +196,6 @@ class DocumentExportService
         }
 
         return \Carbon\Carbon::parse($value)->format('Y-m-d');
-    }
-
-    private function formatDateTime($value): ?string
-    {
-        if (! $value) {
-            return null;
-        }
-
-        return \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
     }
 
     private function tryEvaluateWorkflow(Appointment $appointment): void

@@ -33,6 +33,7 @@ class ChecklistTemplateResolver
             'SCHOOL PRINCIPAL I' => 'Template_SP1.xlsx',
             'SCHOOL PRINCIPAL II' => 'Template_SP2.xlsx',
             'SCHOOL PRINCIPAL III' => 'Template_SP3.xlsx',
+            'SCHOOL PRINCIPAL IV' => 'Template_SP4.xlsx',
         ];
 
         if (isset($directMappings[$position])) {

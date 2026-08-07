@@ -19,7 +19,7 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th><input type="checkbox" id="select-all-trash" onchange="toggleSelectAll(this)"></th>
+                    <th><input type="checkbox" id="select-all-trash"></th>
                     <th>Full name</th>
                     <th>School / district</th>
                     <th>Deleted at</th>
@@ -60,64 +60,7 @@
     </div>
 </div>
 
-<script>
-function toggleSelectAll(source) {
-    document.querySelectorAll('.select-row').forEach(cb => cb.checked = source.checked);
-}
-
-function buildForm(url) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-    form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE">';
-    document.body.appendChild(form);
-    return form;
-}
-
-function restoreSingle(btn, name) {
-    if (!confirm('Restore ' + name + '?')) {
-        return;
-    }
-    buildForm(btn.dataset.restoreUrl).submit();
-}
-
-function deleteSingle(btn, name) {
-    if (!confirm('Permanently delete ' + name + '? This cannot be undone.')) {
-        return;
-    }
-    buildForm(btn.dataset.forceUrl).submit();
-}
-
-function bulkDelete() {
-    const selected = Array.from(document.querySelectorAll('.select-row:checked')).map(cb => cb.value);
-    if (selected.length === 0) {
-        alert('Please select at least one record to delete.');
-        return;
-    }
-    if (!confirm('Permanently delete the selected ' + selected.length + ' record(s)? This cannot be undone.')) {
-        return;
-    }
-    const bulkUrl = document.querySelector('.table-card')?.dataset?.bulkUrl;
-    if (!bulkUrl) {
-        alert('Bulk delete URL is not configured.');
-        return;
-    }
-    const form = buildForm(bulkUrl);
-    selected.forEach(id => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'ids[]';
-        input.value = id;
-        form.appendChild(input);
-    });
-    form.submit();
-}
-
-(function() {
-    const btn = document.getElementById('btn-bulk-delete');
-    if (btn) {
-        btn.addEventListener('click', bulkDelete);
-    }
-})();
-</script>
+@push('scripts')
+<script src="{{ asset('js/appointments-trash.js') }}"></script>
+@endpush
 @endsection

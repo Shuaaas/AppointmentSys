@@ -97,22 +97,22 @@ class DashboardService
                 ->selectRaw('strftime("%Y", encoded_at) as y, strftime("%m", encoded_at) as m, COUNT(*) as total')
                 ->groupByRaw('strftime("%Y", encoded_at), strftime("%m", encoded_at)')
                 ->get()
-                ->keyBy(fn ($row) => $row->y . '-' . $row->m);
+                ->keyBy(fn ($row) => $row->y . '-' . sprintf('%02d', (int)$row->m));
         } else {
             $monthlyCounts = $baseQuery
                 ->where('encoded_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->selectRaw('YEAR(encoded_at) as y, MONTH(encoded_at) as m, COUNT(*) as total')
                 ->groupBy('y', 'm')
                 ->get()
-                ->keyBy(fn ($row) => $row->y . '-' . $row->m);
+                ->keyBy(fn ($row) => $row->y . '-' . sprintf('%02d', (int)$row->m));
         }
 
         return $months->map(function ($date) use ($monthlyCounts) {
-            $key = $date->year . '-' . $date->month;
+            $key = $date->year . '-' . sprintf('%02d', $date->month);
 
             return [
                 'label' => $date->format('M'),
-                'count' => optional($monthlyCounts->get($key))->total ?? 0,
+                'count' => (int) (optional($monthlyCounts->get($key))->total ?? 0),
             ];
         });
     }

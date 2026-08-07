@@ -14,14 +14,34 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('data') && Schema::hasColumn('data', 'item_number')) {
-            DB::statement('ALTER TABLE `data` CHANGE `item_number` `data` VARCHAR(255) NOT NULL');
+            $driver = Schema::getConnection()->getDriverName();
+
+            if ($driver === 'sqlite') {
+                if (Schema::hasColumn('data', 'item_number')) {
+                    Schema::table('data', function (Blueprint $table) {
+                        $table->renameColumn('item_number', 'data');
+                    });
+                }
+            } else {
+                DB::statement('ALTER TABLE `data` CHANGE `item_number` `data` VARCHAR(255) NOT NULL');
+            }
         }
     }
 
     public function down(): void
     {
         if (Schema::hasTable('data') && Schema::hasColumn('data', 'data')) {
-            DB::statement('ALTER TABLE `data` CHANGE `data` `item_number` VARCHAR(255) NOT NULL');
+            $driver = Schema::getConnection()->getDriverName();
+
+            if ($driver === 'sqlite') {
+                if (Schema::hasColumn('data', 'data')) {
+                    Schema::table('data', function (Blueprint $table) {
+                        $table->renameColumn('data', 'item_number');
+                    });
+                }
+            } else {
+                DB::statement('ALTER TABLE `data` CHANGE `data` `item_number` VARCHAR(255) NOT NULL');
+            }
         }
 
         if (Schema::hasTable('data')) {

@@ -350,6 +350,8 @@ class Appointment extends Model
             'TEACHER III' => '13',
             'TEACHER IV' => '14',
             'TEACHER V' => '15',
+            'TEACHER VI' => '16',
+            'TEACHER VII' => '17',
             'WATCHMAN I' => '2',
         ];
 

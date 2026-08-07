@@ -13,9 +13,9 @@
     <form class="user-toolbar" method="GET" action="{{ route('admin.passwords.index') }}">
         <div class="search-wrap">
             <i class="ti ti-search" aria-hidden="true"></i>
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or email…" onchange="this.form.submit()">
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or email…" class="js-autosubmit">
         </div>
-        <select name="role" class="filter-select" onchange="this.form.submit()">
+        <select name="role" class="filter-select js-autosubmit">
             <option value="">All roles</option>
             @foreach (App\Enums\Role::cases() as $r)
                 <option value="{{ $r->value }}" {{ $role === $r->value ? 'selected' : '' }}>{{ $r->label() }}</option>
@@ -66,8 +66,9 @@
                             </td>
                             <td class="td-center">
                                 <button type="button" class="btn btn-sm btn-blue"
-                                        onclick="openResetModal({{ $user->id }}, '{{ addslashes($user->name) }}')">
-                                    <i class="ti ti-key" style="font-size:12px" aria-hidden="true"></i> Reset password
+                                        data-user-id="{{ $user->id }}"
+                                        data-user-name="{{ addslashes($user->name) }}">
+                                    <i class="ti ti-key icon-sm" aria-hidden="true"></i> Reset password
                                 </button>
                             </td>
                         </tr>
@@ -119,8 +120,8 @@
         </div>
     </div>
 
-    <div class="overlay" id="reset-overlay">
-        <div class="modal" style="max-width:460px">
+    <div class="overlay" id="reset-overlay" data-base-url="{{ url('admin/passwords') }}">
+        <div class="modal modal--narrow">
             <div class="modal-head">
                 <span class="modal-title" id="reset-title">Reset password</span>
                 <button type="button" class="modal-close" onclick="closeResetModal()" aria-label="Close">&times;</button>
@@ -141,29 +142,14 @@
                     <p class="text-muted" style="font-size:12px;margin-bottom:0">Minimum 8 characters.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
+                    <button type="button" id="reset-cancel-btn" class="btn btn-secondary">Cancel</button>
                     <button type="submit" class="btn btn-blue">Reset password</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script>
-        function openResetModal(id, name) {
-            const overlay = document.getElementById('reset-overlay');
-            const form = document.getElementById('reset-form');
-            form.action = '{{ url('admin/passwords') }}/' + id;
-            document.getElementById('reset-subtext').textContent = 'Set a new password for ' + name + '.';
-            form.reset();
-            overlay.classList.add('show');
-        }
-
-        function closeResetModal() {
-            document.getElementById('reset-overlay').classList.remove('show');
-        }
-
-        document.getElementById('reset-overlay').addEventListener('click', function (e) {
-            if (e.target === this) closeResetModal();
-        });
-    </script>
+@push('scripts')
+<script src="{{ asset('js/reset-password.js') }}"></script>
+@endpush
 @endsection

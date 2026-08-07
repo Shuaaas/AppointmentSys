@@ -8,9 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('appointments', function (Blueprint $table) {
-            $table->string('transaction_number')->nullable()->change();
-        });
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver !== 'sqlite') {
+            Schema::table('appointments', function (Blueprint $table) {
+                $table->string('transaction_number')->nullable()->change();
+            });
+        }
 
         if (! Schema::hasIndex('appointments', 'appointments_transaction_number_unique', 'unique')) {
             Schema::table('appointments', function (Blueprint $table) {
@@ -21,10 +25,18 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasIndex('appointments', 'appointments_transaction_number_unique', 'unique')) {
+            return;
+        }
+
         Schema::table('appointments', function (Blueprint $table) {
             $table->dropUnique('appointments_transaction_number_unique');
-            $table->string('transaction_number')->nullable(false)->change();
-            $table->unique('appointments_transaction_number_unique');
         });
+
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            Schema::table('appointments', function (Blueprint $table) {
+                $table->string('transaction_number')->nullable(false)->change();
+            });
+        }
     }
 };

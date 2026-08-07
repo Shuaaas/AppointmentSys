@@ -14,8 +14,11 @@ use App\Traits\GeneratesSafeFilename;
 use App\Traits\TracksDocumentDownload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Carbon\Carbon;
 use ZipArchive;
 
 class AppointmentController extends Controller
@@ -106,8 +109,8 @@ class AppointmentController extends Controller
         $this->authorize('create', Appointment::class);
 
         $data                       = $request->validated();
-        $data['encoding_personnel'] = $data['encoding_personnel'] ?? auth()->user()->name ?? 'HRMO Offline Admin';
-        $data['user_id']            = auth()->id();
+        $data['encoding_personnel'] = $data['encoding_personnel'] ?? Auth::user()?->name ?? 'HRMO Offline Admin';
+        $data['user_id']            = Auth::id();
         $data['record_state']       = 'active';
 
         $appointment = Appointment::create($data);
@@ -220,34 +223,86 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Archive — lists records that have reached the "Completed" status.
+     * Archive — lists completed records, paginated by month.
+     *
+     * When no explicit from/to date range is active, the table shows all
+     * completed appointments encoded within the selected month (default:
+     * current month). The ?month=YYYY-MM query parameter drives which month
+     * is shown; prev/next arrows let the user navigate between months.
+     *
+     * If the user explicitly supplies both ?from and ?to, the date-range
+     * filter takes precedence and month-based navigation is bypassed.
      */
     public function archive(Request $request): View
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $from = $request->query('from');
-        $to   = $request->query('to');
+        $from         = $request->query('from');
+        $to           = $request->query('to');
         $selectedUser = $request->query('user');
+        $search       = $request->query('q');
+
+        // ── Month-based pagination (default behaviour) ──────────────────
+        // Active when the user has NOT applied a manual date-range filter.
+        $usingMonthNav = ! ($from && $to);
+
+        $activeMonth  = null;
+        $prevMonthUrl = null;
+        $nextMonthUrl = null;
+        $monthLabel   = null;
+
+        if ($usingMonthNav) {
+            $monthParam  = $request->query('month'); // e.g. "2026-08"
+            $activeMonth = $monthParam
+                ? Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth()
+                : Carbon::now()->startOfMonth();
+
+            $from = $activeMonth->toDateString();                       // first day
+            $to   = $activeMonth->copy()->endOfMonth()->toDateString(); // last day
+
+            $monthLabel = $activeMonth->format('F Y');                  // "August 2026"
+
+            $base = ['q' => $search, 'user' => $selectedUser];
+
+            $prevMonth = $activeMonth->copy()->subMonth();
+            $nextMonth = $activeMonth->copy()->addMonth();
+            $nowMonth  = Carbon::now()->startOfMonth();
+
+            $prevMonthUrl = route('appointments.archive', array_merge($base, [
+                'month' => $prevMonth->format('Y-m'),
+            ]));
+
+            // Only expose next-month link if it isn't in the future
+            $nextMonthUrl = $nextMonth->lte($nowMonth)
+                ? route('appointments.archive', array_merge($base, [
+                    'month' => $nextMonth->format('Y-m'),
+                ]))
+                : null;
+        }
 
         $appointments = Appointment::query()
             ->where('record_state', 'completed')
             ->historyBetween($from, $to)
             ->when($selectedUser, fn ($q) => $q->where('user_id', $selectedUser))
-            ->search($request->query('q'))
+            ->search($search)
             ->orderByDesc('updated_at')
-            ->paginate(15)
-            ->withQueryString();
+            ->get(); // fetch all for the month — no row-level paginate
 
         $hrUsers = \App\Models\User::where('role', 'hr')->get();
 
         return view('appointments.archive', [
-            'appointments' => $appointments,
-            'from'         => $from,
-            'to'           => $to,
-            'selectedUser' => $selectedUser,
-            'hrUsers'      => $hrUsers,
-            'search'       => $request->query('q'),
+            'appointments'  => $appointments,
+            'from'          => $request->query('from'), // original (unresolved) input
+            'to'            => $request->query('to'),
+            'selectedUser'  => $selectedUser,
+            'hrUsers'       => $hrUsers,
+            'search'        => $search,
+            // Month-nav extras
+            'usingMonthNav' => $usingMonthNav,
+            'monthLabel'    => $monthLabel,
+            'prevMonthUrl'  => $prevMonthUrl,
+            'nextMonthUrl'  => $nextMonthUrl,
+            'activeMonth'   => $activeMonth,
         ]);
     }
 
@@ -500,10 +555,10 @@ class AppointmentController extends Controller
         try {
             $path = $formService->generateConsolidatedMonitoring($appointments);
         } catch (\Throwable $e) {
-            \Log::error('Monitoring export failed: ' . $e->getMessage(), [
+            Log::error('Monitoring export failed: ' . $e->getMessage(), [
                 'exception' => $e,
                 'ids' => $ids,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
             abort(500, 'Failed to generate monitoring document. Please try again or contact support.');
         }

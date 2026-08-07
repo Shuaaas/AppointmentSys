@@ -245,7 +245,14 @@
     transform: translateX(-100%);
     transition: transform 0.2s ease;
     width: var(--sidebar-w);
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    z-index: 90;
 
     &.visible { transform: translateX(0); }
+
+    & .hr-sidebar-brand {
+      display: none;
+    }
   }
 }

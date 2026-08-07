@@ -7,8 +7,8 @@
 <div class="action-bar">
         <form class="search-wrap" method="GET" action="{{ route('history.index') }}">
         <i class="ti ti-search" aria-hidden="true"></i>
-        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…" onchange="this.form.submit()">
-        <select name="user" onchange="this.form.submit()" aria-label="Filter by encoded by">
+        <input type="text" name="q" value="{{ $search }}" placeholder="Search by name, school, eligibility…" class="js-autosubmit">
+        <select name="user" class="js-autosubmit" aria-label="Filter by encoded by">
             <option value="">All Users</option>
             @foreach($hrUsers as $hrUser)
                 <option value="{{ $hrUser->id }}" {{ $selectedUser == $hrUser->id ? 'selected' : '' }}>
@@ -20,7 +20,7 @@
         <input type="hidden" name="to" value="{{ $to }}">
     </form>
 
-    <form class="date-control" method="GET" action="{{ route('history.index') }}">
+    <form class="date-control date-control-range" method="GET" action="{{ route('history.index') }}">
         <div class="date-range">
             <i class="ti ti-calendar" aria-hidden="true"></i>
             <label for="history-from">From</label>
@@ -34,7 +34,7 @@
         <input type="hidden" name="q" value="{{ $search }}">
         <input type="hidden" name="user" value="{{ $selectedUser ?? '' }}">
         <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
-        <a href="{{ route('history.index') }}" class="btn btn-sm btn-secondary" style="margin-left:8px">Clear</a>
+        <a href="{{ route('history.index') }}" class="btn btn-sm btn-secondary">Clear</a>
     </form>
 </div>
 
@@ -42,10 +42,10 @@
     <div class="tbl-wrap">
         <table>
             <colgroup>
-                <col style="width:3%"><col style="width:20%">
-                <col style="width:16%"><col style="width:12%">
-                <col style="width:9%"><col style="width:14%">
-                <col style="width:11%"><col style="width:15%">
+                <col style="width:38px"><col style="width:220px">
+                <col style="width:170px"><col style="width:140px">
+                <col style="width:120px"><col style="width:160px">
+                <col style="width:150px"><col style="width:100px">
             </colgroup>
             <thead>
                 <tr>
@@ -61,11 +61,16 @@
             </thead>
             <tbody>
                 @forelse ($history as $i => $item)
-                    <tr>
+                    <tr class="data-row">
                         <td style="color:var(--text-muted)">{{ $i + 1 }}</td>
-                        <td>{{ $item->full_name }}</td>
-                        <td>{{ $item->school_district }}</td>
-                        <td>{{ $item->nature_of_appointment }}</td>
+                        <td>
+                            <div class="name-text">{{ $item->full_name }}</div>
+                            @if (!empty($item->position_title))
+                                <div class="small-text">{{ $item->position_title }}</div>
+                            @endif
+                        </td>
+                        <td>{{ $item->school_district ?: '—' }}</td>
+                        <td><span class="badge badge-teal">{{ $item->nature_of_appointment ?: '—' }}</span></td>
                         <td>
                             @php
                                 $statusClass = match ($item->record_state) {
@@ -110,12 +115,7 @@
     </div>
 </div>
 
-<script>
-document.getElementById('history-from').addEventListener('change', function() {
-    document.getElementById('history-to').min = this.value;
-});
-document.getElementById('history-to').addEventListener('change', function() {
-    document.getElementById('history-from').max = this.value;
-});
-</script>
+@push('scripts')
+<script src="{{ asset('js/history.js') }}"></script>
+@endpush
 @endsection

@@ -1,0 +1,365 @@
+/* ============================================================
+   PAMS — Auth Stylesheet
+   Used by: auth/login.blade.php, admin/users/create.blade.php
+   ============================================================
+   NOTE: body background / watermark pseudo-elements that use
+   Blade asset() helpers remain as a minimal inline <style> stub
+   in each template. All other styles live here.
+   ============================================================ */
+
+/* ── CSS Custom Properties ── */
+:root {
+    --auth-blue:       #003087;
+    --auth-blue-mid:   #0047b3;
+    --auth-blue-light: #e6ecf7;
+    --auth-blue-dark:  #0a1a33;
+    --auth-gold:       #ffd700;
+    --auth-red:        #CE1126;
+    --auth-text:       #1a2840;
+    --auth-muted:      #5a6880;
+    --auth-header-h:   64px;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: var(--auth-text);
+}
+
+/* ── Fixed overlay (no asset URL needed) ── */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 48, 135, 0.72);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* ── Nav / Header ── */
+.auth-header {
+    height: var(--auth-header-h);
+    background: rgba(0, 48, 135, 0.96);
+    border-bottom: none;
+    color: #fff;
+    padding: 0 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 2px 16px rgba(0,0,0,.25);
+    backdrop-filter: blur(8px);
+}
+.auth-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+}
+.auth-header-logo {
+    height: 44px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 1px 4px rgba(0,0,0,.3));
+}
+.auth-header-text .org {
+    font-size: .67rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.7);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+.auth-header-text .sys {
+    font-size: .9rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.15;
+}
+.auth-header-datetime {
+    color: rgba(255,255,255,.65);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+@media (max-width: 560px) { .auth-header-datetime { display: none; } }
+.auth-header-spacer { width: 0; }
+@media (min-width: 680px) { .auth-header-spacer { width: 180px; } }
+
+/* ── Centered wrapper ── */
+.auth-wrapper {
+    min-height: calc(100vh - var(--auth-header-h));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Card ── */
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.3);
+    overflow: hidden;
+}
+.auth-card .card-body {
+    padding: 0 !important;
+}
+
+/* Card header banner */
+.auth-card-header {
+    background: linear-gradient(120deg, var(--auth-blue) 0%, var(--auth-blue-dark) 100%);
+    border-bottom: 3px solid var(--auth-gold);
+    padding: 24px 28px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+}
+.auth-card-header-logo {
+    height: 50px;
+    width: 50px;
+    background: #fff;
+    border-radius: 50%;
+    padding: 3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+.auth-card-header-text {
+    position: relative;
+    z-index: 1;
+}
+.auth-card-header-text .eyebrow {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--auth-gold);
+    margin-bottom: 3px;
+}
+.auth-card-header-text .title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+}
+
+/* Card body padding */
+.auth-card-body {
+    padding: 28px 28px 24px;
+    background: #fff;
+}
+
+/* ── Form elements ── */
+.form-label { font-size: .82rem; font-weight: 600; color: var(--auth-text); }
+.form-control {
+    border-color: #c5d0e6;
+    font-size: .92rem;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+.form-control:focus {
+    border-color: var(--auth-blue-mid);
+    box-shadow: 0 0 0 3px rgba(0,71,179,.12);
+}
+
+/* ── Primary button ── */
+.btn-hr-primary {
+    width: 100%;
+    display: block;
+    text-align: center;
+    background: var(--auth-blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    transition: background .2s;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.btn-hr-primary:hover {
+    background: var(--auth-blue-dark);
+    color: #fff;
+}
+
+/* ── Card footer ── */
+.auth-card-footer {
+    background: var(--auth-blue-light);
+    border-top: 1px solid #dce5f5;
+    padding: 14px 28px;
+    font-size: .78rem;
+    color: var(--auth-muted);
+    text-align: center;
+}
+
+/* ══════════════════════════════════════════════
+   Add User page — extends auth-card styles
+   (admin/users/create.blade.php)
+   ══════════════════════════════════════════════ */
+
+/* Override layout padding on this admin page */
+.add-user-page-host .content { padding: 0 !important; }
+.add-user-page-host .hr-pagebar { display: none !important; }
+
+        .add-user-page {
+            position: relative;
+            min-height: calc(100vh - 56px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1rem;
+            background: url('{{ asset('deped_bg.jpg') }}') center center / cover no-repeat;
+            overflow: hidden;
+        }
+        .add-user-page::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 48, 135, 0.72);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .add-user-page::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 560px; height: 560px;
+            background: url('{{ asset('deped_logo.png') }}') center / contain no-repeat;
+            transform: translate(-50%, -50%);
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Login-style card (slightly wider) ── */
+        .auth-card {
+            width: 100%;
+            max-width: 520px;
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 12px 48px rgba(0,0,0,.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+        .auth-card .card-body { padding: 0 !important; }
+
+        .auth-card-header {
+            background: linear-gradient(120deg, #003087 0%, #0a1a33 100%);
+            border-bottom: 3px solid #ffd700;
+            padding: 24px 28px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-card-header::after {
+            content: '';
+            position: absolute;
+            right: -30px; top: -30px;
+            width: 140px; height: 140px;
+            background: url('{{ asset('logo_DepED.png') }}') center / contain no-repeat;
+            opacity: 0.10;
+            pointer-events: none;
+        }
+        .auth-card-header-logo {
+            height: 50px; width: 50px;
+            background: #fff;
+            border-radius: 50%;
+            padding: 3px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+            flex-shrink: 0;
+            position: relative; z-index: 1;
+        }
+        .auth-card-header-text { position: relative; z-index: 1; }
+        .auth-card-header-text .eyebrow {
+            font-size: .68rem; font-weight: 700;
+            letter-spacing: .12em; text-transform: uppercase;
+            color: #ffd700; margin-bottom: 3px;
+        }
+        .auth-card-header-text .title {
+            font-size: 1.05rem; font-weight: 800;
+            color: #fff; line-height: 1.2;
+        }
+
+        .auth-card-body {
+            padding: 28px 28px 24px;
+            background: #fff;
+        }
+
+        .au-field { margin-bottom: 16px; }
+        .au-field label {
+            display: block;
+            font-size: .82rem;
+            font-weight: 600;
+            color: #1a2840;
+            margin-bottom: 5px;
+        }
+        .au-field input, .au-field select {
+            width: 100%;
+            border: 1px solid #c5d0e6;
+            font-size: .92rem;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #1a2840;
+            background: #fff;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .au-field input:focus, .au-field select:focus {
+            border-color: #0047b3;
+            box-shadow: 0 0 0 3px rgba(0,71,179,.12);
+        }
+        .au-field select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding-right: 38px;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%235a6880' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+        }
+
+        /* Two-column row for password fields */
+        .au-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .au-row .au-field { flex: 1; margin-bottom: 0; }
+
+        .btn-hr-primary {
+            display: block;
+            width: 100%;
+            background: #003087;
+            color: #fff;
+            font-weight: 700;
+            font-size: .92rem;
+            padding: 11px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .btn-hr-primary:hover { background: #0a1a33; color: #fff; }
+
+        .au-back {
+            text-align: center;
+            margin-top: 16px;
+            font-size: .85rem;
+            color: #5a6880;
+        }
+        .au-back a { color: #003087; font-weight: 600; text-decoration: none; }

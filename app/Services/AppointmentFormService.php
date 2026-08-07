@@ -24,15 +24,7 @@ class AppointmentFormService
      */
     public function generate(Appointment $appointment): string
     {
-         if ($appointment->senior_high_school === 'Yes') {
-            $templateName = 'SAMPLE APPOINTMENT FORM FOR SHS.docx';
-        } elseif ($appointment->senior_high_school === 'No' && $appointment->teaching_level === 'Secondary') {
-            $templateName = 'SAMPLE APPOINTMENT FORM FOR HS.docx';
-        } else {
-            $templateName = 'SAMPLE APPOINTMENT FORM.docx';
-        }
-
-        $templatePath = resource_path('templates/' . $templateName);
+        $templatePath = $this->resolveAppointmentFormTemplate($appointment);
 
         if (! File::exists($templatePath)) {
             throw new RuntimeException('Appointment form template was not found.');
@@ -56,6 +48,31 @@ class AppointmentFormService
         }
 
         return $outputPath;
+    }
+
+    private function resolveAppointmentFormTemplate(Appointment $appointment): string
+    {
+        $isSubstitute = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
+        $basePath = $isSubstitute
+            ? resource_path('templates/Substitute Appointments')
+            : resource_path('templates');
+
+        $templateName = $isSubstitute ? 'SUBSTITUTE APPOINTMENT FORM.docx' : 'SAMPLE APPOINTMENT FORM.docx';
+
+        if ($appointment->senior_high_school === 'Yes') {
+            $academicStrands = ['ABM', 'HUMSS', 'STEM'];
+            $strand = (string) ($appointment->senior_high_strand ?? '');
+
+            if (in_array($strand, $academicStrands, true)) {
+                $templateName = $isSubstitute ? 'SUBSTITUTE APPOINTMENT FORM FOR SHS.docx' : 'SAMPLE APPOINTMENT FORM FOR SHS.docx';
+            } elseif (in_array($strand, ['SHS - TVL Track', 'SHS - Sports Track'], true)) {
+                $templateName = $isSubstitute ? 'SUBSTITUTE APPOINTMENT FORM FOR TVL-SPORTS TRACK.docx' : 'SAMPLE APPOINTMENT FORM FOR TVL-SPORTS TRACK.docx';
+            }
+        } elseif ($appointment->senior_high_school === 'No' && $appointment->teaching_level === 'Secondary') {
+            $templateName = $isSubstitute ? 'SUBSTITUTE APPOINTMENT FORM FOR HS.docx' : 'SAMPLE APPOINTMENT FORM FOR HS.docx';
+        }
+
+        return $basePath . '/' . $templateName;
     }
 
     /**
@@ -559,6 +576,10 @@ class AppointmentFormService
     {
         $isNonPermanent = $appointment->employee_status === 'Substitute' || $appointment->employee_status === 'Provisional';
 
+        $subFrom = $isNonPermanent ? $this->dateShort($appointment->substitute_from) : null;
+        $subTo = $isNonPermanent ? $this->dateShort($appointment->substitute_to) : null;
+        $subRange = $this->buildDateRange($subFrom, $subTo, false);
+
          return [
             'employee_name' => $this->upper($this->employeeNameForAppointmentForm($appointment)),
             'tn_number' => $this->upper($appointment->transaction_number ?: ''),
@@ -578,6 +599,7 @@ class AppointmentFormService
             'plantilla_page_number' => $appointment->plantilla_page_number,
             'date_signed' => $this->date($appointment->date_received_hr ?? now()),
             'date_of_signing' => $this->date($appointment->date_of_signing),
+            'signing_date' => $appointment->date_of_signing ? $this->dateShort($appointment->date_of_signing) : '',
             'publication_date_from' => $isNonPermanent ? '' : $this->date($appointment->publication_date_from),
             'publication_date_to' => $isNonPermanent ? '' : $this->date($appointment->publication_date_to),
             'assessment_date' => $this->date($appointment->assessment_date),
@@ -601,6 +623,9 @@ class AppointmentFormService
             'ethnicity' => $appointment->ethnicity ?: '',
             'date_last_promotion' => $this->date($appointment->date_last_promotion),
             'position_from' => $appointment->position_from ?: '',
+            'substitute_from' => $subFrom ?: 'N/A',
+            'substitute_to' => $subTo ?: 'N/A',
+            'substitute_date_range' => $subRange,
         ];
     }
 
@@ -684,7 +709,7 @@ class AppointmentFormService
             'E'  => 'plantilla_number',
             'F'  => 'position_from',
             'G'  => 'position',
-            'H'  => 'vice',
+            'H'  => 'employee_name',
             'I'  => 'sex',
             'J'  => 'date_of_birth',
             'K'  => 'tin',
@@ -728,7 +753,8 @@ class AppointmentFormService
             'plantilla_number' => $this->upper($appointment->plantilla_item_number ?: ''),
             'position_from' => $this->upper($appointment->position_from ?: ''),
             'position' => $this->upper($appointment->position_title),
-            'vice' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
+            'employee_name' => $this->monitoringEmployeeName($appointment),
+            'vice' => $this->monitoringViceName($appointment),
             'sex' => $this->upper($appointment->sex ?: ''),
             'date_of_birth' => $this->dateShort($appointment->date_of_birth),
             'tin' => $this->upper(str_replace('-', '', $appointment->tin ?: '')),
@@ -748,6 +774,37 @@ class AppointmentFormService
             'previous_incumbent' => $this->upper($appointment->previous_incumbent ?: 'Vacant'),
             'natural_vacancy' => $this->upper($appointment->natural_vacancy ?: 'N/A'),
         ];
+    }
+
+    private function monitoringEmployeeName(Appointment $appointment): string
+    {
+        $parts = array_filter([
+            $this->upper($appointment->last_name),
+            $this->upper($appointment->first_name),
+            $this->upper($appointment->middle_name),
+            $this->upper($appointment->extension_name),
+        ]);
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        $first = array_shift($parts);
+        array_unshift($parts, $first . ',');
+
+        return implode(' ', $parts);
+    }
+
+    private function monitoringViceName(Appointment $appointment): string
+    {
+        $parts = array_filter([
+            $this->upper($appointment->first_name),
+            $appointment->middle_name ? strtoupper(mb_substr($appointment->middle_name, 0, 1, 'UTF-8')) . '.' : null,
+            $this->upper($appointment->last_name),
+            $this->upper($appointment->extension_name),
+        ]);
+
+        return implode(' ', $parts);
     }
 
     private function nonTeachingResult(Appointment $appointment): string

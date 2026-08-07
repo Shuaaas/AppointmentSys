@@ -6,15 +6,15 @@
     <form class="user-toolbar" method="GET" action="{{ route('admin.users.index') }}">
         <div class="search-wrap">
             <i class="ti ti-search" aria-hidden="true"></i>
-            <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or email…" onchange="this.form.submit()">
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search by name or email…" class="js-autosubmit">
         </div>
-        <select name="role" class="filter-select" onchange="this.form.submit()">
+        <select name="role" class="filter-select" class="js-autosubmit">
             <option value="">All roles</option>
             @foreach (App\Enums\Role::cases() as $r)
                 <option value="{{ $r->value }}" {{ $role === $r->value ? 'selected' : '' }}>{{ $r->label() }}</option>
             @endforeach
         </select>
-        <select name="status" class="filter-select" onchange="this.form.submit()">
+        <select name="status" class="filter-select" class="js-autosubmit">
             <option value="">All statuses</option>
             <option value="active" {{ $status === 'active' ? 'selected' : '' }}>Active</option>
             <option value="inactive" {{ $status === 'inactive' ? 'selected' : '' }}>Inactive</option>
@@ -65,8 +65,7 @@
                                        class="position-input"
                                        data-user-id="{{ $user->id }}"
                                        placeholder="e.g. Administrative Assistant III"
-                                       value="{{ $user->position_title }}"
-                                       style="width:100%;padding:4px 8px;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                                       value="{{ $user->position_title }}">
                             </td>
                             <td class="td-center">
                                 <span class="status-pill {{ $user->is_active ? 'active' : 'inactive' }}">
@@ -76,13 +75,13 @@
                             </td>
                             <td class="td-center">
                                 @if ($user->is_active && $user->id !== auth()->id())
-                                    <form method="POST" action="{{ route('admin.users.deactivate', $user) }}" class="deactivate-user-form" data-user-name="{{ $user->name }}" data-action="deactivate" style="display:inline-block;">
+                                    <form method="POST" action="{{ route('admin.users.deactivate', $user) }}" class="deactivate-user-form d-inline-block" data-user-name="{{ $user->name }}" data-action="deactivate">
                                         @csrf
                                         @method('PATCH')
                                         <button type="button" class="action-pill deactivate deactivate-trigger">Deactivate</button>
                                     </form>
                                 @else
-                                    <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="deactivate-user-form" data-user-name="{{ $user->name }}" data-action="reactivate" style="display:inline-block;">
+                                    <form method="POST" action="{{ route('admin.users.activate', $user) }}" class="deactivate-user-form d-inline-block" data-user-name="{{ $user->name }}" data-action="reactivate">
                                         @csrf
                                         @method('PATCH')
                                         <button type="button" class="action-pill reactivate deactivate-trigger">Reactivate</button>
@@ -138,135 +137,18 @@
         </div>
     </div>
 
-    <div id="deactivate-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-        <div style="width:min(420px, 100%); background:#fff; border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,0.2); padding:24px; text-align:center;">
-            <h3 id="deactivate-confirm-title" style="margin:0 0 10px; font-size:20px;">Deactivate account?</h3>
-            <p id="deactivate-confirm-text" style="margin:0 0 20px; color:#475569;">Are you sure you want to deactivate this account?</p>
-            <div style="display:flex; justify-content:center; gap:10px;">
+    <div id="deactivate-confirm-modal" class="deactivate-modal-overlay">
+        <div class="deactivate-modal-box">
+            <h3 id="deactivate-confirm-title" class="deactivate-modal-title">Deactivate account?</h3>
+            <p id="deactivate-confirm-text" class="deactivate-modal-text">Are you sure you want to deactivate this account?</p>
+            <div class="deactivate-modal-actions">
                 <button type="button" class="btn btn-secondary" id="deactivate-cancel-btn">Cancel</button>
                 <button type="button" class="btn btn-danger" id="deactivate-confirm-btn">Deactivate</button>
             </div>
         </div>
     </div>
 
-    <script>
-        function initUserDeactivationModal() {
-            const modal = document.getElementById('deactivate-confirm-modal');
-            const title = document.getElementById('deactivate-confirm-title');
-            const text = document.getElementById('deactivate-confirm-text');
-            const cancelBtn = document.getElementById('deactivate-cancel-btn');
-            const confirmBtn = document.getElementById('deactivate-confirm-btn');
-            let pendingForm = null;
-
-            document.querySelectorAll('.deactivate-user-form').forEach(function (form) {
-                form.querySelector('.deactivate-trigger').addEventListener('click', function () {
-                    pendingForm = form;
-                    const userName = form.dataset.userName || 'this account';
-                    const action = form.dataset.action === 'reactivate' ? 'reactivate' : 'deactivate';
-
-                    title.textContent = action === 'reactivate' ? 'Reactivate account?' : 'Deactivate account?';
-                    text.textContent = action === 'reactivate'
-                        ? 'Are you sure you want to reactivate ' + userName + '?'
-                        : 'Are you sure you want to deactivate ' + userName + '?';
-                    confirmBtn.textContent = action === 'reactivate' ? 'Reactivate' : 'Deactivate';
-                    confirmBtn.className = action === 'reactivate' ? 'btn btn-success' : 'btn btn-danger';
-                    modal.style.display = 'flex';
-                });
-            });
-
-            function closeModal() {
-                modal.style.display = 'none';
-                pendingForm = null;
-            }
-
-            cancelBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            confirmBtn.addEventListener('click', function () {
-                if (pendingForm) {
-                    pendingForm.submit();
-                }
-            });
-        }
-
-        function initializeUserDeactivationModalSafely() {
-            window.requestAnimationFrame(function () {
-                initUserDeactivationModal();
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', initializeUserDeactivationModalSafely);
-        document.addEventListener('hr:page:load', initializeUserDeactivationModalSafely);
-        if (document.readyState !== 'loading') {
-            initializeUserDeactivationModalSafely();
-        }
-
-        function initPositionInputs() {
-            const inputs = document.querySelectorAll('.position-input');
-            let timeout = null;
-
-            inputs.forEach(function (input) {
-                input.addEventListener('blur', function () {
-                    if (timeout) clearTimeout(timeout);
-                    savePosition(this);
-                });
-
-                input.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (timeout) clearTimeout(timeout);
-                        savePosition(this);
-                    }
-                });
-
-                input.addEventListener('input', function () {
-                    if (timeout) clearTimeout(timeout);
-                    timeout = setTimeout(() => savePosition(this), 1500);
-                });
-            });
-        }
-
-        function savePosition(input) {
-            const userId = input.dataset.userId;
-            const value = input.value.trim();
-            const originalValue = input.value;
-
-            fetch('/admin/users/' + userId + '/position', {
-                method: 'PATCH',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ position_title: value }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    input.style.borderColor = 'var(--green)';
-                    setTimeout(() => {
-                        input.style.borderColor = '';
-                    }, 1500);
-                } else {
-                    input.value = originalValue;
-                    input.style.borderColor = 'var(--red)';
-                }
-            })
-            .catch(() => {
-                input.value = originalValue;
-                input.style.borderColor = 'var(--red)';
-            });
-        }
-
-        document.addEventListener('hr:page:load', initPositionInputs);
-        if (document.readyState !== 'loading') {
-            initPositionInputs();
-        } else {
-            document.addEventListener('DOMContentLoaded', initPositionInputs);
-        }
-    </script>
+@push('scripts')
+<script src="{{ asset('js/user-management.js') }}"></script>
+@endpush
 @endsection
